@@ -8,11 +8,13 @@ ToDo
 [X] Figure out RankOrder for submission
 [X] Reverse RankOrder per new clarification
 [X] Tune single random forest for submission 3
-[] Further exploration of variables based on random forest from submission 2
+[X] Further exploration of variables based on random forest from submission 2
 [X] More sophisticated feature selection for submission 4
 [X] RF with bagging for submission 5
-[] RF with boosting for submission 6
-[] Create summary 
+[X] RF with boosting for submission 6
+[X] Create summary 
+[] Try to publish summary to Rpubs again
+[] Try a progression of linear models for submission 7
 
 Nearing end:
 [] Upload Model https://www.kaggle.com/forums/t/3821/model-submission-best-practices

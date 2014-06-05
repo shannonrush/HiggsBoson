@@ -1,0 +1,66 @@
+Submission 7 - Forward Feature Selection of Linear Models
+========================================================
+```{r load_data, cache=TRUE}
+    train <- read.csv("../../data/processed/processed_train.csv")
+    # remove EventId, not allowed for classifying
+    train$EventId <- NULL
+    test <- read.csv("../../data/original/test.csv")
+```
+```{r create_validation, cache=TRUE}
+    set.seed(123)
+    training.indices <- sample(nrow(train), size=0.8*nrow(train))
+    training <- train[training.indices,]
+    validate <- train[-training.indices,]
+```
+Find the single variable that has the best performance under lm.
+Does not include any treatment of undefined -999.0 quantities.
+Uses only one 80/20 split to validate.
+```{r lm_function}
+    LinearResult <- function(f, formula.string) {
+        formula <- as.formula(paste(formula.string, f))
+        glm <- glm(formula, data=training, family=binomial)
+        # a vector of probabilities that prediction is 's'
+        probs <- predict.glm(glm, newdata=validate, type="response")
+        prediction <- sapply(probs, function(x) ifelse(x < 0.5, "b", "s"))
+        length(which(prediction==validate$Label))
+    }
+```
+
+```{r forward_selection, cache=TRUE}
+    features <- names(training)[1:30]
+    complete.results <- data.frame(formula=character(), correct=integer())
+    formula.string <- "Label ~"
+    while (length(features) > 0) {
+        results <- sapply(features, LinearResult, formula.string)
+        winner.index <- which.max(results)
+        winner <- features[winner.index]
+        winning.formula <- paste(formula.string,winner)
+        new.result <- data.frame(formula=winning.formula, correct=max(results))
+        complete.results <- rbind(complete.results, new.result)
+        # add winner to formula and remove from features
+        features <- features[-winner.index]
+        formula.string <- paste(winning.formula," + ")
+    }
+```
+```{r results}
+    complete.results$formula <- as.character(complete.results$formula)
+    winning.result <- which.max(complete.results$correct)
+    best.formula <- as.formula(complete.results[winning.result,"formula"])
+    best.formula
+```
+```{r create_submission}
+    glm <- glm(best.formula, data=train, family=binomial)
+    # a vector of probabilities that prediction is 's'
+    probs <- predict.glm(glm, newdata=test, type="response")
+    probs.df <- data.frame(EventId=test$EventId, prob=probs)
+    # order probs.df by decreasing probability of s to get the RankOrder
+    require(plyr)    
+    ordered.pred <- arrange(probs.df, desc(prob))
+    class <- sapply(ordered.pred$prob, function(x) ifelse(x < 0.5, "b", "s"))
+    pred.df <- data.frame(EventId=ordered.pred$EventId, RankOrder=550000:1, Class=class)
+    write.csv(pred.df, file="submission7.csv", row.names=F, quote=F)
+```
+
+
+
+
