@@ -1,0 +1,27 @@
+Submission 6 - RF Boosting
+========================================================
+```{r load_data, cache=TRUE}
+    train <- read.csv("../../data/processed/processed_train.csv")
+        # remove EventId, not allowed for classifying
+    train$EventId <- NULL
+    test <- read.csv("../../data/original/test.csv")
+```
+```{r create_validation, cache=TRUE}
+    set.seed(12345)
+    training.indices <- sample(nrow(train), size=0.8*nrow(train))
+    training <- train[training.indices,]
+    validate <- train[-training.indices,]
+```
+
+Run a single RF with the training and validation data for baseline
+```{r sample_baseline, cache=TRUE}
+    require(randomForest)
+    rf <- randomForest(Label ~ ., data=training)
+```
+```{r validation_prediction, cache=TRUE}
+    baseline.prediction <- predict(rf, validate)
+```
+```{r baseline.result}
+    sum(baseline.prediction==validate$Label)/nrow(validate)
+```
+

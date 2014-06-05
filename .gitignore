@@ -1,0 +1,10 @@
+*.DS_Store
+*.csv
+*.tgz
+*.zip
+*.Rhistory
+*.Rdata
+*.Rda
+*.rdb
+*.rdx
+__packages

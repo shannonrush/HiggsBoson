@@ -1,0 +1,71 @@
+Submission 4 - Single RF with further feature selection
+========================================================
+```{r load_previous, cache=TRUE}
+    load("rf1.RData")
+```
+```{r load_data, cache=TRUE}
+    train <- read.csv("../data/processed/processed_train.csv")
+    test <- read.csv("../data/original/test.csv")
+```
+```{r explore_previous, cache=TRUE}
+    require(randomForest)
+    require(plyr)
+    
+    rf$importance
+    
+    # Mean Decrease Gini
+    g <- importance(rf, type=2, scale=F)
+    gini <- data.frame(variables=rownames(g),MeanDecreaseGini=g[1:nrow(g)], stringsAsFactors=F)
+    arrange(gini, desc(MeanDecreaseGini))
+
+    # Mean Decrease Accuracy
+    a <- importance(rf, type=1, scale=F)
+    accuracy <- data.frame(variables=rownames(a),MeanDecreaseAccuracy=a[1:nrow(a)], stringsAsFactors=F)
+    arrange(accuracy, desc(MeanDecreaseAccuracy))
+    
+    include <- unique(c(gini$variables[1:10]), accuracy$variables[1:10])
+    include
+```
+Including only the top 5 resulted in an increased OOB error rate. Trying the top 10.
+```{r forest_10, cache=TRUE}
+   rf10 <- randomForest(x=train[,include], y=train$Label)
+```
+```{r explore_rf10}
+    rf10$err.rate
+```
+Top 10 does not improve the OOB error rate. What about the top 15?
+```{r}
+    include.15 <- unique(c(gini$variables[1:15]), accuracy$variables[1:15])
+    include.15
+```
+```{r forest_15, cache=TRUE}
+   rf15 <- randomForest(x=train[,include.15], y=train$Label)
+```
+```{r explore_rf15}
+    rf15$err.rate
+```
+15 improves on 10 but still behind including all variables. Trying top 20.
+```{r}
+    include.20 <- unique(c(gini$variables[1:20]), accuracy$variables[1:20])
+    include.20
+```
+```{r forest_20, cache=TRUE}
+   rf20 <- randomForest(x=train[,include.20], y=train$Label)
+```
+```{r explore_rf20}
+    rf20$err.rate
+```
+Trying one more with 25.
+```{r}
+    include.25 <- unique(c(gini$variables[1:25]), accuracy$variables[1:25])
+    include.25
+```
+```{r forest_25, cache=TRUE}
+   rf25 <- randomForest(x=train[,include.25], y=train$Label)
+```
+```{r explore_rf25}
+    rf25$err.rate
+```
+Limiting features in this way with a single random forest does not improve on OOB error rate. 
+No submission.
+

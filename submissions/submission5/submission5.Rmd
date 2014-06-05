@@ -1,0 +1,70 @@
+Submission 5 - RF Bagging
+========================================================
+```{r load_data, cache=TRUE}
+    train <- read.csv("../../data/processed/processed_train.csv")
+        # remove EventId, not allowed for classifying
+    train$EventId <- NULL
+    test <- read.csv("../../data/original/test.csv")
+```
+```{r create_validation, cache=TRUE}
+    set.seed(12345)
+    training.indices <- sample(nrow(train), size=0.8*nrow(train))
+    training <- train[training.indices,]
+    validate <- train[-training.indices,]
+```
+```{r bagging_functions}
+    bagging <- function(formula,data,test,m=5,ntree=500,mtry=NULL,trace=T) {
+      outcome.label <- outcomeLabel(formula)
+      mtry <- ifelse(is.null(mtry),floor(sqrt(ncol(data))),mtry)
+      C <- matrix(nrow=nrow(test),ncol=m)
+      n <- nrow(data)
+      for (i in 1:m) {
+        t <- data[sample(n, n, replace=T), ]
+        t[,outcome.label]<-droplevels(t[,outcome.label]) # in case any outcomes are not sampled
+        fit <- randomForest(formula,data=t,ntree=ntree,do.trace=trace)      
+        C[,i] <- as.character(predict(fit,test))
+      }
+      apply(C,1,bagPrediction)
+    }
+    
+    bagPrediction <- function(sample) {
+      max.classes <- maxClasses(sample)
+      ifelse(length(max.classes)==1,max.classes,sample(max.classes,1))
+    }
+    
+    maxVoteCount <- function(sample) {
+      sum(sample==names(which.max(table(sample))))
+    }
+    
+    maxClasses <- function(sample) {
+      names(which(table(sample)==maxVoteCount(sample)))
+    }
+
+    outcomeLabel <- function(formula) {
+      toString(formula[[2]])
+    }
+```
+Run a single RF with the training and validation data for baseline
+```{r sample_baseline, cache=TRUE}
+    require(randomForest)
+    rf <- randomForest(Label ~ ., data=training)
+```
+```{r validation_prediction, cache=TRUE}
+    baseline.prediction <- predict(rf, validate)
+```
+```{r baseline.result}
+    sum(baseline.prediction==validate$Label)/nrow(validate)
+```
+Bagging RF with defaults (m=5)
+```{r validation_bagging, cache=TRUE}
+    bagging.prediction <- bagging(Label ~ ., training, validate, trace=F)
+```
+```{r bagging.result}
+    sum(bagging.prediction==validate$Label)/nrow(validate)
+```
+Bagging did not improve upon the baseline RF
+
+
+
+
+

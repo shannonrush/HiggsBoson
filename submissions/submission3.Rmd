@@ -1,0 +1,56 @@
+Submission 3 - Optimized Single Random Forest By Feature Selection
+========================================================
+
+```{r load_previous, cache=TRUE}
+    load("rf1.RData")
+```
+```{r load_data, cache=TRUE}
+    train <- read.csv("../data/processed/processed_train.csv")
+    test <- read.csv("../data/original/test.csv")
+```
+
+```{r explore_previous}
+    require(randomForest)
+    require(plyr)
+    
+    rf$importance
+    
+    # Mean Decrease Gini
+    g <- importance(rf, type=2, scale=F)
+    gini <- data.frame(variables=rownames(g),MeanDecreaseGini=g[1:nrow(g)], stringsAsFactors=F)
+    arrange(gini, desc(MeanDecreaseGini))
+
+    # Mean Decrease Accuracy
+    a <- importance(rf, type=1, scale=F)
+    accuracy <- data.frame(variables=rownames(a),MeanDecreaseAccuracy=a[1:nrow(a)], stringsAsFactors=F)
+    arrange(accuracy, desc(MeanDecreaseAccuracy))
+    
+    include <- unique(c(gini$variables[1:5]), accuracy$variables[1:5])
+```
+Run a new random forest including only the top 5 variables based on Gini and Accuracy
+```{r forest_5, cache=TRUE}
+   rf2 <- randomForest(x=train[,include], y=train$Label, importance=T)
+   rf2
+```
+Looks like there's been a little improvement, make a prediction
+```{r prediction, cache=TRUE}
+    pred <- predict(rf2, test, type="prob")
+```
+```{r create_submission}
+
+    ## add EventId to pred
+     pred.df <- data.frame(EventId=test$EventId, b=pred[,"b"], s=pred[,"s"])  
+
+    # order pred.df by increasing s to get the RankOrder
+    require(plyr)    
+    ordered.pred <- arrange(pred.df, s)
+    
+    Class <- apply(ordered.pred, 1, function(p) ifelse(p["s"] > p["b"], "s", "b"))
+
+    final.prediction <- data.frame(EventId=ordered.pred$EventId,RankOrder=1:550000,Class)
+    
+    write.csv(final.prediction, file="submission3.csv", row.names=F, quote=F)
+```
+
+
+

@@ -1,0 +1,8 @@
+Submission 2b - Correcting RankOrder per Clarification
+========================================================
+```{r}
+    sub2 <- read.csv("submission2.csv")
+    sub2$RankOrder <- 550000:1
+    write.csv(sub2, file="submission2b.csv", row.names=F, quote=F)
+```
+

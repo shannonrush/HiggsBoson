@@ -1,0 +1,564 @@
+Higgs Boson Machine Learning Challenge
+========================================================
+
+The goal of this challenge is to identify which simulated ATLAS experiment proton-proton collision
+observations contain evidence of boson pairs ("signal"), and which do not ("background"). 
+
+The challenge is [hosted by Kaggle](http://www.kaggle.com/c/higgs-boson) and provided by [The Atlas Experiment](http://atlas.ch/).  Technical details were found in the [Laboratoire de l’Accélerateur Linéaire](http://higgsml.lal.in2p3.fr/) technical documentation [PDF](http://higgsml.lal.in2p3.fr/files/2014/04/documentation_v1.5.pdf). Attempts at summarizing these are my own, and may be imperfect (or 
+completely off - I'm not a particle physicist!) [Pull requests to correct these](https://github.com/shannonrush/Contests/blob/master/HiggsBoson/Summary.Rmd) are welcome.
+
+# The Data
+
+Provided were a training set of 250,000 observations and a test set of 500,000 observations.
+Unusable or unknown quantities are reported as -999.0.
+
+The variables include 17 "primitive" quantities and 13 "derived" quantities. Also included
+is the EventId identifying the observation. The training set also includes the goal label (b or s)
+and a "Weight" metric not to be used in classification. For this reason I've stripped it out 
+of the training set and saved a new CSV as processed_train.csv
+
+## The Variables
+```{r load_data, cache=TRUE}
+    train <- read.csv("data/processed/processed_train.csv")
+    names(train)
+    signal <- which(train$Label=="s")
+```
+```{r load_libraries}
+    require(ggplot2)
+```
+```{r plot_function}
+    CreatePlot <- function(data, v, yintercept=c()) {
+        p <- ggplot(data, aes(x=EventId, y=data[,v], color=Label), environment=environment())
+        l <- p + labs(y=v)
+        if (length(yintercept)==0) {
+            print(l + geom_point())   
+        } else {
+            print(l + geom_point() + geom_hline(yintercept=yintercept))   
+        }
+    }
+```
+
+
+### Primitive Variables
+
+**PRI_tau_pt**
+
+The transverse momentum $\sqrt{p^2_x+p^2_y}$, or the momentum perpendicular to the beam line, of the hadronic tau measured in GeV
+
+```{r pri_tau_pt_fig, fig.width=8, cache=TRUE}
+    CreatePlot(train, "PRI_tau_pt")
+```
+```{r pri_tau_pt}
+    ptp <- train$PRI_tau_pt
+    summary(ptp)
+```
+Most observations are < 175 GeV, let's replot on that subset
+```{r subset_ptp_175, fig.width=8, cache=TRUE}
+    ptp.175 <- subset(train, PRI_tau_pt < 175)
+    CreatePlot(ptp.175, "PRI_tau_pt")
+```
+It looks like the slower the transverse momentum, the more likely the observation is background noise. Let's replot for < 50
+```{r subset_ptp_50, fig.width=8, cache=TRUE}
+    ptp.50 <- subset(train, PRI_tau_pt < 50)
+    CreatePlot(ptp.50, "PRI_tau_pt")
+```
+**PRI_tau_eta**
+
+The pseudorapidity η (the angle from the beam axis) of the hadronic tau.
+
+```{r pri_tau_eta_fig, fig.width=8, cache=TRUE}
+    CreatePlot(train, "PRI_tau_eta")
+```
+It looks like a higher quantity of signal observations exist within -1.5 to 1.5 than outside this range.
+```{r pri_tau_eta_in_range}
+    signal.obs <- subset(train, Label == "s", select = PRI_tau_eta)
+    # quantity signal in range -1.5 to 1.5
+    in.range <- subset(signal.obs, PRI_tau_eta >= -1.5 & PRI_tau_eta <= 1.5)
+    nrow(in.range)/nrow(signal.obs)
+```
+Almost 80% of signal observations fall in the -1.5 to 1.5 range. Is it also more likely that an
+observation outside of this range is background?
+```{r pri_tau_eta_out_range}
+    outside.range <- subset(train, PRI_tau_eta < -1.5 | PRI_tau_eta > 1.5, select=Label)
+    table(outside.range)
+    length(which(outside.range=="b"))/nrow(outside.range)
+```
+About 74% of observations outside the range -1.5 to 1.5 are background noise.
+
+**PRI_tau_phi**
+
+The azimuthal angle φ, from -pi to pi in the spherical coordinate system, of the hadronic tau 
+around the beam axis.
+
+```{r pri_tau_phi_fig, fig.width=8, cache=TRUE}
+    CreatePlot(train, "PRI_tau_phi")
+```
+```{r pri_tau_phi}
+    # all observations
+    summary(train$PRI_tau_phi)
+    summary(train[signal,"PRI_tau_phi"])
+    summary(train[-signal,"PRI_tau_phi"])
+```
+**PRI_lep_pt**
+
+The transverse momentum $\sqrt{p^2_x+p^2_y}$, or the momentum perpendicular to the beam line, of the lepton (electron or muon) measured in GeV
+
+```{r pri_lep_pt_fig, fig.width=8, cache=TRUE}
+    CreatePlot(train, "PRI_lep_pt")
+```
+Replotting to < 200
+```{r pri_lep_pt_200, fig.width=8, cache=TRUE}
+    plp.200 <- subset(train, PRI_lep_pt < 200)
+    CreatePlot(plp.200, "PRI_lep_pt")
+```
+```{r pri_lep_pt}
+    summary(train$PRI_lep_pt)
+```
+**PRI_lep_eta**
+
+The pseudorapidity η (the angle from the beam axis) of the lepton.
+
+```{r pri_lep_eta_fig, fig.width=8, cache=TRUE}
+    CreatePlot(train, "PRI_lep_eta")
+```
+Just as with the pseudorapidity of the hadronic tau it appears the signal
+clusters in the range of -1.5 to 1.5
+```{r pri_lep_eta_in_range}
+    signal.obs <- subset(train, Label == "s", select = PRI_lep_eta)
+    # quantity signal in range -1.5 to 1.5
+    in.range <- subset(signal.obs, PRI_lep_eta >= -1.5 & PRI_lep_eta <= 1.5)
+    nrow(in.range)/nrow(signal.obs)
+```
+Aabout 78% of signal observations fall in the -1.5 to 1.5 range. 
+
+```{r pri_lep_eta_out_range}
+    outside.range <- subset(train, PRI_lep_eta < -1.5 | PRI_lep_eta > 1.5, select=Label)
+    table(outside.range)
+    length(which(outside.range=="b"))/nrow(outside.range)
+```
+About 75% of observations outside the range -1.5 to 1.5 are background noise.
+
+**PRI_lep_phi**
+
+The azimuthal angle φ, from -pi to pi in the spherical coordinate system, of the lepton 
+around the beam axis.
+
+```{r pri_lep_phi_fig, fig.width=8, cache=TRUE}
+    CreatePlot(train, "PRI_lep_phi")
+```
+```{r pri_lep_phi}
+        # all observations
+    summary(train$PRI_lep_phi)
+    summary(train[signal,"PRI_lep_phi"])
+    summary(train[-signal,"PRI_lep_phi"])
+```
+**PRI_met**
+The missing transverse energy $\overrightarrow{E}^{miss}_T$ 
+
+```{r pri_met, fig.width=8, cache=TRUE}
+    CreatePlot(train, "PRI_met")
+```
+```{r pri_met_summary}
+    summary(train$PRI_met)
+    summary(train[signal,"PRI_met"])
+    summary(train[-signal,"PRI_met"])
+```
+That one outlier really makes this blurry...
+```{r pri_met_500, fig.width=8, cache=TRUE}
+    pm.500 <- subset(train, PRI_met < 500)
+    CreatePlot(pm.500, "PRI_met")
+```
+```{r pri_met_200, fig.width=8, cache=TRUE}
+    pm.200 <- subset(train, PRI_met < 200)
+    CreatePlot(pm.200, "PRI_met")
+```
+```{r pri_met_100, fig.width=8, cache=TRUE}
+    pm.100 <- subset(train, PRI_met < 100)
+    CreatePlot(pm.100, "PRI_met")
+```
+There appears to be a lot of signal clustered < 25
+```{r pri_met_signal_25}
+    under.25 <- subset(train[signal,], PRI_met < 25)
+    nrow(under.25)/length(signal)
+```
+About 38% of the signal is < 25 
+
+**PRI_met_phi**
+
+The azimuth angle φ of the missing transverse energy.
+
+```{r pri_met_phi, fig.width=8, cache=TRUE}
+    CreatePlot(train, "PRI_met_phi")
+```
+```{r pri_met_phi_summary}
+    summary(train$PRI_met_phi)
+    summary(train[signal,"PRI_met_phi"])
+    summary(train[-signal,"PRI_met_phi"])
+```
+
+**PRI_met_sumet**
+
+The total transverse energy in the detector.
+```{r pri_met_sumet, fig.width=8, cache=TRUE}
+    CreatePlot(train, "PRI_met_sumet")
+```
+```{r pri_met_sumet_summary}
+    summary(train$PRI_met_sumet)
+    summary(train[signal,"PRI_met_sumet"])
+    summary(train[-signal,"PRI_met_sumet"])
+```
+```{r pri_met_sumet_750, fig.width=8, cache=TRUE}
+    pms.750 <- subset(train, PRI_met_sumet < 750)
+    CreatePlot(pms.750, "PRI_met_sumet")
+```
+```{r pri_met_sumet_300, fig.width=8, cache=TRUE}
+    pms.300 <- subset(train, PRI_met_sumet < 300)
+    CreatePlot(pms.300, "PRI_met_sumet")
+```
+```{r pri_met_sumet_200, fig.width=8, cache=TRUE}
+    pms.200 <- subset(train, PRI_met_sumet < 200)
+    CreatePlot(pms.200, "PRI_met_sumet")
+```
+**PRI_jet_num**
+
+The number of jets (a narrow cone of hadrons and other particles produced by the 
+hadronization of a quark or gluon)
+http://en.wikipedia.org/wiki/Jet_(particle_physics)
+
+```{r pri_jet_num, fig.width=8, cache=TRUE}
+    ggplot(data=train, aes(x=PRI_jet_num, fill=Label)) + geom_bar(position=position_dodge())
+```
+**PRI_jet_leading_pt** 
+The transverse momentum $\sqrt{p^2_x+p^2_y}$ of the leading jet, that is the jet with
+largest transverse momentum (undeﬁned if PRI jet num = 0).
+
+```{r pri_jet_leading_pt, fig.width=8, cache=TRUE}
+    CreatePlot(train, "PRI_jet_leading_pt")
+```
+```{r pri_jet_leading_pt_na}
+    pjlp.na <- subset(train, PRI_jet_leading_pt == -999.0, select=Label)
+    table(pjlp.na)
+    length(which(pjlp.na=="b"))/nrow(pjlp.na)
+```
+75% of undefined are background.
+```{r pri_jet_leading_pt_defined, fig.width=8, cache=TRUE}
+    pjlp <- subset(train, PRI_jet_leading_pt != -999.0)
+    CreatePlot(pjlp, "PRI_jet_leading_pt")
+```
+```{r pri_jet_leading_pt_summary}
+    summary(pjlp$PRI_jet_leading_pt)
+    pjlp.signal <- which(pjlp$Label=="s")
+    summary(pjlp[pjlp.signal,"PRI_jet_leading_pt"])
+    summary(pjlp[-pjlp.signal,"PRI_jet_leading_pt"])
+```
+**PRI_jet_leading_eta**
+
+The pseudorapidity η of the leading jet (undeﬁned if PRI jet num = 0).
+
+```{r pri_jet_leading_eta, fig.width=8, cache=TRUE}
+    CreatePlot(train, "PRI_jet_leading_eta")
+```
+```{r pri_jet_leading_eta_na}
+    pjle.na <- subset(train, PRI_jet_leading_eta == -999.0, select=Label)
+    table(pjle.na)
+    length(which(pjle.na=="b"))/nrow(pjle.na)
+```
+74% of undefined are background.
+```{r pri_jet_leading_eta_defined, fig.width=8, cache=TRUE}
+    pjle <- subset(train, PRI_jet_leading_eta != -999.0)
+    CreatePlot(pjle, "PRI_jet_leading_eta", c(-1.5,1.5))
+```
+```{r pjle_background_in_range}
+    pjle.inrange <- which(pjle$PRI_jet_leading_eta >= -1.5 & pjle$PRI_jet_leading_eta <= 1.5)
+    table(pjle[pjle.inrange,"Label"])
+    nrow(subset(pjle[pjle.inrange,],Label=="b"))/length(pjle.inrange)
+```
+67% of defined observations in the -1.5 to 1.5 range are background
+
+What percentange of defined observations outside the -1.5 to 1.5 range are signal?
+```{r pjle_signal_out_range}
+    out.range <- subset(pjle, PRI_jet_leading_eta < -1.5 | PRI_jet_leading_eta > 1.5, select="Label")
+    table(out.range)
+```
+```{r pri_jet_leading_eta_summary}
+    summary(pjle$PRI_jet_leading_eta)
+    pjle.signal <- which(pjle$Label=="s")
+    summary(pjle[pjle.signal,"PRI_jet_leading_eta"])
+    summary(pjle[-pjle.signal,"PRI_jet_leading_eta"])
+```
+**PRI_jet_leading_phi**
+
+The azimuth angle φ of the leading jet (undeﬁned if PRI jet num = 0).
+
+```{r pri_jet_leading_phi, fig.width=8, cache=TRUE}
+    CreatePlot(train, "PRI_jet_leading_phi")
+```
+```{r pri_jet_leading_phi_na}
+    pjlphi.na <- subset(train, PRI_jet_leading_phi == -999.0, select=Label)
+    table(pjlphi.na)
+    length(which(pjlphi.na=="b"))/nrow(pjlphi.na)
+```
+75% of undefined are background
+```{r pri_jet_leading_phi_defined, fig.width=8, cache=TRUE}
+    pjlphi <- subset(train, PRI_jet_leading_phi != -999.0)
+    CreatePlot(pjlphi, "PRI_jet_leading_phi")
+```
+```{r pri_jet_leading_phi_summary}
+    summary(pjlphi$PRI_jet_leading_phi)
+    pjlphi.signal <- which(pjlphi$Label=="s")
+    summary(pjlphi[pjlphi.signal,"PRI_jet_leading_phi"])
+    summary(pjlphi[-pjlphi.signal,"PRI_jet_leading_phi"])
+```
+**PRI_jet_subleading_pt**
+
+The transverse momentum $\sqrt{p^2_x+p^2_y}$ of the second leading jet. 
+ (undeﬁned if PRI jet num ≤ 1).
+ 
+```{r pri_jet_subleading_pt, fig.width=8, cache=TRUE}
+    CreatePlot(train, "PRI_jet_subleading_pt")
+```
+```{r pri_jet_subleading_pt_na}
+    pjsp.na <- subset(train, PRI_jet_subleading_pt == -999.0, select=Label)
+    table(pjsp.na)
+    length(which(pjsp.na=="b"))/nrow(pjsp.na)
+```
+70% of undefined are background
+```{r pri_jet_subleading_pt_defined, fig.width=8, cache=TRUE}
+    pjsp <- subset(train, PRI_jet_subleading_pt != -999.0)
+    CreatePlot(pjsp, "PRI_jet_subleading_pt")
+```
+```{r pri_jet_subleading_pt_summary}
+    summary(pjsp$PRI_jet_subleading_pt)
+    pjsp.signal <- which(pjsp$Label=="s")
+    summary(pjsp[pjsp.signal,"PRI_jet_subleading_pt"])
+    summary(pjsp[-pjsp.signal,"PRI_jet_subleading_pt"])
+```
+**PRI_jet_subleading_phi**
+
+The azimuth angle φ of the subleading jet (undeﬁned if PRI jet num ≤ 1).
+```{r pri_jet_subleading_phi, fig.width=8, cache=TRUE}
+    CreatePlot(train, "PRI_jet_subleading_phi")
+```
+```{r pri_jet_subleading_phi_na}
+    pjsphi.na <- subset(train, PRI_jet_subleading_phi == -999.0, select=Label)
+    table(pjsphi.na)
+    length(which(pjsphi.na=="b"))/nrow(pjsphi.na)
+```
+70% of undefined are background
+```{r pri_jet_subleading_phi_defined, fig.width=8, cache=TRUE}
+    pjsphi <- subset(train, PRI_jet_subleading_phi != -999.0)
+    CreatePlot(pjsphi, "PRI_jet_subleading_phi")
+```
+```{r pri_jet_subleading_phi_summary}
+    summary(pjsphi$PRI_jet_subleading_phi)
+    pjsphi.signal <- which(pjsphi$Label=="s")
+    summary(pjsphi[pjsphi.signal,"PRI_jet_subleading_phi"])
+    summary(pjsphi[-pjsphi.signal,"PRI_jet_subleading_phi"])
+```
+**PRI_jet_all_pt** 
+
+The scalar sum of the transverse momentum of all the jets.
+```{r pri_jet_all_pt, fig.width=8, cache=TRUE}
+    CreatePlot(train, "PRI_jet_all_pt")
+```
+```{r pri_jet_all_pt_500, fig.width=8, cache=TRUE}
+    pjap.500 <- subset(train, PRI_jet_all_pt < 500)
+    CreatePlot(pjap.500, "PRI_jet_all_pt")
+```
+```{r pri_jet_all_pt_300, fig.width=8, cache=TRUE}
+    pjap.300 <- subset(train, PRI_jet_all_pt < 300)
+    CreatePlot(pjap.300, "PRI_jet_all_pt")
+```
+```{r pri_jet_all_pt_summary}
+    summary(train$PRI_jet_all_pt)
+    summary(train[signal,"PRI_jet_all_pt"])
+    summary(train[-signal,"PRI_jet_all_pt"])
+```
+### Derived Variables
+**DER_mass_MMC**
+
+The estimated mass of the Higgs boson candidate. May be undeﬁned.
+```{r der_mass_mmc, fig.width=8, cache=TRUE}
+    CreatePlot(train, "DER_mass_MMC")
+```
+```{r der_mass_mmc_na}
+    dmm.na <- subset(train, DER_mass_MMC == -999.0, select=Label)
+    table(dmm.na)
+    length(which(dmm.na=="b"))/nrow(dmm.na)
+```
+93% of undefined are background
+```{r der_mass_mmc_defined, fig.width=8, cache=TRUE}
+    dmm <- subset(train, DER_mass_MMC != -999.0)
+    CreatePlot(dmm, "DER_mass_MMC")
+```
+```{r der_mass_mmc_250, fig.width=8, cache=TRUE}
+    dmm.250 <- subset(dmm, DER_mass_MMC < 250)
+    CreatePlot(dmm.250, "DER_mass_MMC", c(75,175))
+```
+```{r dmm_signal_in_range}
+    dmm.signal <- subset(dmm, Label=="s")
+    dmm.signal.inrange <- subset(dmm.signal, DER_mass_MMC >= 75 & DER_mass_MMC <= 175)
+    nrow(dmm.signal.inrange)/nrow(dmm.signal)
+```
+97% of defined signal observations lie in range 75 to 175
+
+**DER_mass_transverse_met_lep**
+
+The transverse mass between the missing transverse energy and the lepton.
+
+```{r der_mass_transverse_met_lep, fig.width=8, cache=TRUE}
+    CreatePlot(train, "DER_mass_transverse_met_lep")
+```
+```{r der_mass_transverse_met_lep_200, fig.width=8, cache=TRUE}
+    dmtml.200 <- subset(train, DER_mass_transverse_met_lep < 200)
+    CreatePlot(dmtml.200, "DER_mass_transverse_met_lep")
+```
+```{r der_mass_transverse_met_lep_150, fig.width=8, cache=TRUE}
+    dmtml.150 <- subset(train, DER_mass_transverse_met_lep < 150)
+    CreatePlot(dmtml.150, "DER_mass_transverse_met_lep", 75)
+```
+```{r der_mass_transverse_met_lep_under_75}
+    dmtml.signal.75 <- subset(train[signal,], DER_mass_transverse_met_lep < 75)
+    nrow(dmtml.signal.75)/nrow(train[signal,])
+```
+93% of all signal observations are < 75
+```{r der_mass_transverse_met_lep_summary}
+    summary(train$DER_mass_transverse_met_lep)
+    summary(train[signal,"DER_mass_transverse_met_lep"])
+    summary(train[-signal,"DER_mass_transverse_met_lep"])
+```
+**DER_mass_vis**
+
+The total invariant mass ([total energy and momentum](http://en.wikipedia.org/wiki/Invariant_mass)) of the hadronic tau and the lepton.
+
+```{r der_mass_vis, fig.width=8, cache=TRUE}
+    CreatePlot(train, "DER_mass_vis", 150)
+```
+```{r der_mass_vis_150, fig.width=8, cache=TRUE}
+    dmv.150 <- subset(train, DER_mass_vis < 150)
+    CreatePlot(dmv.150, "DER_mass_vis", c(50,125))
+```
+What percentage of all signal are between 50 and 125?
+```{r der_mass_vis_signal_inrange}
+    dmv.signal.inrange <- subset(train[signal,], DER_mass_vis >=50 & DER_mass_vis <= 125)
+    nrow(dmv.signal.inrange)/nrow(train[signal,])
+```
+95% of all signal observations found in range 50 to 125
+```{r der_mass_vis_summary}
+    summary(train$DER_mass_vis)
+    summary(train[signal,"DER_mass_vis"])
+    summary(train[-signal,"DER_mass_vis"])
+```
+**DER_pt_h**
+
+The modulus of the vector sum of the transverse momentum of the hadronic tau,
+the lepton, and the missing transverse energy vector.
+
+```{r der_pt_h, fig.width=8, cache=TRUE}
+    CreatePlot(train, "DER_pt_h", 400)
+```
+```{r der_pt_h_400, fig.width=8, cache=TRUE}
+    dph.400 <- subset(train, DER_pt_h < 400)
+    CreatePlot(dph.400, "DER_pt_h")
+```
+```{r der_pt_h_200, fig.width=8, cache=TRUE}
+    dph.200 <- subset(train, DER_pt_h < 200)
+    CreatePlot(dph.200, "DER_pt_h", 50)
+```
+```{r der_pt_h_50, fig.width=8, cache=TRUE}
+    dph.50 <- subset(train, DER_pt_h < 50)
+    CreatePlot(dph.50, "DER_pt_h")
+```
+What percentage of total signal > 50?
+```{r der_pt_h_signal_50}
+    dph.signal.inrange <- subset(train[signal,], DER_pt_h > 50)
+    nrow(dph.signal.inrange)/nrow(train[signal,])
+```
+53% of total signal found > 50
+```{r der_pt_h_summary}
+    summary(train$DER_pt_h)
+    summary(train[signal,"DER_pt_h"])
+    summary(train[-signal,"DER_pt_h"])
+```
+**DER_deltaeta_jet_jet**
+
+The pseudorapidity separation (the angular separation)  between the two jets (undeﬁned if
+PRI jet num ≤ 1).
+
+```{r der_deltaeta_jet_jet, fig.width=8, cache=TRUE}
+    CreatePlot(train, "DER_deltaeta_jet_jet")
+```
+```{r der_deltaeta_jet_jet_na}
+    ddjj.na <- subset(train, DER_deltaeta_jet_jet == -999.0, select=Label)
+    table(ddjj.na)
+    length(which(ddjj.na=="b"))/nrow(ddjj.na)
+```
+70% of undefined observations are background
+```{r der_deltaeta_jet_jet_defined, fig.width=8, cache=TRUE}
+    ddjj <- subset(train, DER_deltaeta_jet_jet != -999.0)
+    CreatePlot(ddjj, "DER_deltaeta_jet_jet")
+```
+```{r der_deltaeta_jet_jet_defined_summary}
+    summary(ddjj$DER_deltaeta_jet_jet)
+    ddjj.signal <- which(ddjj$Label=="s")
+    summary(ddjj[ddjj.signal,"DER_deltaeta_jet_jet"])
+    summary(ddjj[-ddjj.signal,"DER_deltaeta_jet_jet"])
+```
+**DER_mass_jet_jet**
+
+The invariant mass of the two jets (undeﬁned if PRI jet num ≤ 1).
+```{r der_mass_jet_jet, fig.width=8, cache=TRUE}
+    CreatePlot(train, "DER_mass_jet_jet")
+```
+```{r der_mass_jet_jet_na}
+    dmjj.na <- subset(train, DER_mass_jet_jet == -999.0, select=Label)
+    table(dmjj.na)
+    length(which(dmjj.na=="b"))/nrow(dmjj.na)
+```
+70% of undefined observations are background
+```{r der_mass_jet_jet_defined, fig.width=8, cache=TRUE}
+    dmjj <- subset(train, DER_mass_jet_jet != -999.0)
+    CreatePlot(dmjj, "DER_mass_jet_jet")
+```
+```{r der_mass_jet_jet_defined_summary}
+    summary(dmjj$DER_mass_jet_jet)
+    dmjj.signal <- which(dmjj$Label=="s")
+    summary(dmjj[dmjj.signal,"DER_mass_jet_jet"])
+    summary(dmjj[-dmjj.signal,"DER_mass_jet_jet"])
+```
+**DER_prodeta_jet_jet**
+
+The absolute value of the product of the pseudorapidities of the two jets
+(undeﬁned if PRI jet num ≤ 1).
+
+```{r der_prodeta_jet_jet, fig.width=8, cache=TRUE}
+    CreatePlot(train, "DER_prodeta_jet_jet")
+```
+```{r der_prodeta_jet_jet_na}
+    dpjj.na <- subset(train, DER_prodeta_jet_jet == -999.0, select=Label)
+    table(dpjj.na)
+    length(which(dpjj.na=="b"))/nrow(dpjj.na)
+```
+70% of undefined observations are background
+```{r der_prodeta_jet_jet_defined, fig.width=8, cache=TRUE}
+    dpjj <- subset(train, DER_prodeta_jet_jet != -999.0)
+    CreatePlot(dpjj, "DER_prodeta_jet_jet")
+```
+```{r der_prodeta_jet_jet_defined_summary}
+    summary(dpjj$DER_prodeta_jet_jet)
+    dpjj.signal <- which(dpjj$Label=="s")
+    summary(dpjj[dpjj.signal,"DER_prodeta_jet_jet"])
+    summary(dpjj[-dpjj.signal,"DER_prodeta_jet_jet"])
+```
+**DER_deltar_tau_lep**
+
+The R separation ([separation between the centers](http://physics.info/gravitation-energy/)) between the hadronic tau and the lepton.
+
+```{r der_deltar_tau_lep, fig.width=8, cache=TRUE}
+    CreatePlot(train, "DER_deltar_tau_lep")
+```
+```{r der_deltar_tau_leps_summary}
+    summary(train$DER_deltar_tau_lep)
+    summary(train[signal,"DER_deltar_tau_lep"])
+    summary(train[-signal,"DER_deltar_tau_lep"])
+```
