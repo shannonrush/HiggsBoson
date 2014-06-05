@@ -1427,6 +1427,9 @@ summary(dpjj[-dpjj.signal, "DER_prodeta_jet_jet"])
 
 **DER_deltar_tau_lep**
 
+The R separation ([separation between the centers](http://physics.info/gravitation-energy/)) between the hadronic tau and the lepton.
+
+
 ```r
 CreatePlot(train, "DER_deltar_tau_lep")
 ```
@@ -1459,5 +1462,261 @@ summary(train[-signal, "DER_deltar_tau_lep"])
 ```
 ##    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
 ##   0.208   1.770   2.470   2.370   2.960   5.680
+```
+
+**DER_pt_tot**
+
+The modulus of the vector sum of the missing transverse momenta and the
+transverse momenta of the hadronic tau, the lepton, the leading jet (if PRI jet num ≥ 1)
+and the subleading jet (if PRI jet num = 2) (but not of any additional jets).
+
+
+```r
+CreatePlot(train, "DER_pt_tot")
+```
+
+![plot of chunk der_pt_tot](figure/der_pt_tot.png) 
+
+
+```r
+dpt.200 <- subset(train, DER_pt_tot < 200)
+CreatePlot(dpt.200, "DER_pt_tot")
+```
+
+![plot of chunk der_pt_tot_200](figure/der_pt_tot_200.png) 
+
+
+```r
+summary(train$DER_pt_tot)
+```
+
+```
+##    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+##     0.0     2.8    12.3    18.9    27.6  2830.0
+```
+
+```r
+summary(train[signal, "DER_pt_tot"])
+```
+
+```
+##    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+##     0.0     2.8    10.7    18.4    27.2  2830.0
+```
+
+```r
+summary(train[-signal, "DER_pt_tot"])
+```
+
+```
+##    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+##     0.0     2.9    13.3    19.2    27.8   467.0
+```
+
+**DER_sum_pt**
+
+The sum of the moduli of the transverse momenta of the hadronic tau, the
+lepton, the leading jet (if PRI jet num ≥ 1) and the subleading jet (if PRI jet num = 2)
+and the other jets (if PRI jet num = 3).
+
+
+```r
+CreatePlot(train, "DER_sum_pt")
+```
+
+![plot of chunk der_sum_pt](figure/der_sum_pt.png) 
+
+
+```r
+dsp.200 <- subset(train, DER_sum_pt < 200)
+CreatePlot(dsp.200, "DER_sum_pt")
+```
+
+![plot of chunk der_sum_pt_200](figure/der_sum_pt_200.png) 
+
+
+```r
+summary(train$DER_sum_pt)
+```
+
+```
+##    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+##    46.1    77.6   121.0   158.0   200.0  1850.0
+```
+
+```r
+summary(train[signal, "DER_sum_pt"])
+```
+
+```
+##    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+##    46.3    94.7   153.0   183.0   233.0  1510.0
+```
+
+```r
+summary(train[-signal, "DER_sum_pt"])
+```
+
+```
+##    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+##    46.1    71.6   108.0   146.0   178.0  1850.0
+```
+
+**DER_pt_ratio_lep_tau** 
+
+The ratio of the transverse momenta of the lepton and the hadronic tau.
+
+
+```r
+CreatePlot(train, "DER_pt_ratio_lep_tau")
+```
+
+![plot of chunk der_pt_ratio_lep_tau](figure/der_pt_ratio_lep_tau.png) 
+
+
+```r
+dptlt.5 <- subset(train, DER_pt_ratio_lep_tau < 5)
+CreatePlot(dptlt.5, "DER_pt_ratio_lep_tau")
+```
+
+![plot of chunk der_pt_ratio_lep_tau_5](figure/der_pt_ratio_lep_tau_5.png) 
+
+
+```r
+summary(train$DER_pt_ratio_lep_tau)
+```
+
+```
+##    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+##   0.047   0.883   1.280   1.440   1.780  19.800
+```
+
+```r
+summary(train[signal, "DER_pt_ratio_lep_tau"])
+```
+
+```
+##    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+##   0.047   0.695   1.010   1.210   1.480  19.700
+```
+
+```r
+summary(train[-signal, "DER_pt_ratio_lep_tau"])
+```
+
+```
+##    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+##    0.08    1.03    1.40    1.56    1.89   19.80
+```
+
+
+**DER_met_phi_centrality**
+
+The centrality of the azimuthal angle of the missing transverse energy vector wrt the 
+hadronic tau and the lepton
+
+
+```r
+CreatePlot(train, "DER_met_phi_centrality")
+```
+
+![plot of chunk der_met_phi_centrality](figure/der_met_phi_centrality.png) 
+
+
+```r
+summary(train$DER_met_phi_centrality)
+```
+
+```
+##    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+##  -1.410  -1.370  -0.356  -0.128   1.230   1.410
+```
+
+```r
+summary(train[signal, "DER_met_phi_centrality"])
+```
+
+```
+##    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+##  -1.410  -1.270   0.994   0.321   1.350   1.410
+```
+
+```r
+summary(train[-signal, "DER_met_phi_centrality"])
+```
+
+```
+##    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+##  -1.410  -1.380  -0.999  -0.362   0.952   1.410
+```
+
+**DER_lep_eta_centrality** 
+
+The centrality of the pseudorapidity of the lepton wrt the two jets
+(undeﬁned if PRI jet num ≤ 1)
+
+
+```r
+CreatePlot(train, "DER_lep_eta_centrality")
+```
+
+![plot of chunk der_lep_eta_centrality](figure/der_lep_eta_centrality.png) 
+
+
+```r
+dlec.na <- subset(train, DER_lep_eta_centrality == -999, select = Label)
+table(dlec.na)
+```
+
+```
+## dlec.na
+##      b      s 
+## 124255  53202
+```
+
+```r
+length(which(dlec.na == "b"))/nrow(dlec.na)
+```
+
+```
+## [1] 0.7002
+```
+
+70% of undefined observations are background
+
+```r
+dlec <- subset(train, DER_lep_eta_centrality != -999)
+CreatePlot(dlec, "DER_lep_eta_centrality")
+```
+
+![plot of chunk der_lep_eta_centrality_defined](figure/der_lep_eta_centrality_defined.png) 
+
+
+```r
+summary(dlec$DER_lep_eta_centrality)
+```
+
+```
+##    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+##   0.000   0.004   0.454   0.458   0.879   1.000
+```
+
+```r
+dlec.signal <- which(dlec$Label == "s")
+summary(dlec[dlec.signal, "DER_lep_eta_centrality"])
+```
+
+```
+##    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+##   0.000   0.155   0.752   0.595   0.948   1.000
+```
+
+```r
+summary(dlec[-dlec.signal, "DER_lep_eta_centrality"])
+```
+
+```
+##    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+##   0.000   0.000   0.181   0.348   0.710   1.000
 ```
 

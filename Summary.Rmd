@@ -562,3 +562,93 @@ The R separation ([separation between the centers](http://physics.info/gravitati
     summary(train[signal,"DER_deltar_tau_lep"])
     summary(train[-signal,"DER_deltar_tau_lep"])
 ```
+**DER_pt_tot**
+
+The modulus of the vector sum of the missing transverse momenta and the
+transverse momenta of the hadronic tau, the lepton, the leading jet (if PRI jet num ≥ 1)
+and the subleading jet (if PRI jet num = 2) (but not of any additional jets).
+
+```{r der_pt_tot, fig.width=8, cache=TRUE}
+    CreatePlot(train, "DER_pt_tot")
+```
+```{r der_pt_tot_200, fig.width=8, cache=TRUE}
+    dpt.200 <- subset(train, DER_pt_tot < 200)
+    CreatePlot(dpt.200, "DER_pt_tot")
+```
+```{r der_pt_tot_summary}
+    summary(train$DER_pt_tot)
+    summary(train[signal,"DER_pt_tot"])
+    summary(train[-signal,"DER_pt_tot"])
+```
+**DER_sum_pt**
+
+The sum of the moduli of the transverse momenta of the hadronic tau, the
+lepton, the leading jet (if PRI jet num ≥ 1) and the subleading jet (if PRI jet num = 2)
+and the other jets (if PRI jet num = 3).
+
+```{r der_sum_pt, fig.width=8, cache=TRUE}
+    CreatePlot(train, "DER_sum_pt")
+```
+```{r der_sum_pt_200, fig.width=8, cache=TRUE}
+    dsp.200 <- subset(train, DER_sum_pt < 200)
+    CreatePlot(dsp.200, "DER_sum_pt")
+```
+```{r der_sum_pt_summary}
+    summary(train$DER_sum_pt)
+    summary(train[signal,"DER_sum_pt"])
+    summary(train[-signal,"DER_sum_pt"])
+```
+**DER_pt_ratio_lep_tau** 
+
+The ratio of the transverse momenta of the lepton and the hadronic tau.
+
+```{r der_pt_ratio_lep_tau, fig.width=8, cache=TRUE}
+    CreatePlot(train, "DER_pt_ratio_lep_tau")
+```
+```{r der_pt_ratio_lep_tau_5, fig.width=8, cache=TRUE}
+    dptlt.5 <- subset(train, DER_pt_ratio_lep_tau < 5)
+    CreatePlot(dptlt.5, "DER_pt_ratio_lep_tau")
+```
+```{r der_pt_ratio_lep_tau_summary}
+    summary(train$DER_pt_ratio_lep_tau)
+    summary(train[signal,"DER_pt_ratio_lep_tau"])
+    summary(train[-signal,"DER_pt_ratio_lep_tau"])
+```
+
+**DER_met_phi_centrality**
+
+The centrality of the azimuthal angle of the missing transverse energy vector wrt the 
+hadronic tau and the lepton
+
+```{r der_met_phi_centrality, fig.width=8, cache=TRUE}
+    CreatePlot(train, "DER_met_phi_centrality")
+```
+```{r der_met_phi_centrality_summary}
+    summary(train$DER_met_phi_centrality)
+    summary(train[signal,"DER_met_phi_centrality"])
+    summary(train[-signal,"DER_met_phi_centrality"])
+```
+**DER_lep_eta_centrality** 
+
+The centrality of the pseudorapidity of the lepton wrt the two jets
+(undeﬁned if PRI jet num ≤ 1)
+
+```{r der_lep_eta_centrality, fig.width=8, cache=TRUE}
+    CreatePlot(train, "DER_lep_eta_centrality")
+```
+```{r der_lep_eta_centrality_na}
+    dlec.na <- subset(train, DER_lep_eta_centrality == -999.0, select=Label)
+    table(dlec.na)
+    length(which(dlec.na=="b"))/nrow(dlec.na)
+```
+70% of undefined observations are background
+```{r der_lep_eta_centrality_defined, fig.width=8, cache=TRUE}
+    dlec <- subset(train, DER_lep_eta_centrality != -999.0)
+    CreatePlot(dlec, "DER_lep_eta_centrality")
+```
+```{r der_lep_eta_centrality_defined_summary}
+    summary(dlec$DER_lep_eta_centrality)
+    dlec.signal <- which(dlec$Label=="s")
+    summary(dlec[dlec.signal,"DER_lep_eta_centrality"])
+    summary(dlec[-dlec.signal,"DER_lep_eta_centrality"])
+```
