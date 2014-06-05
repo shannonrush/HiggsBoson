@@ -14,7 +14,7 @@ ToDo
 [X] RF with boosting for submission 6
 [X] Create summary 
 [] Try to publish summary to Rpubs again
-[] Try a progression of linear models for submission 7
+[X] Try a progression of linear models for submission 7
 
 Nearing end:
 [] Upload Model https://www.kaggle.com/forums/t/3821/model-submission-best-practices

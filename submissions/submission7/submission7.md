@@ -16,9 +16,9 @@ training <- train[training.indices, ]
 validate <- train[-training.indices, ]
 ```
 
-Find the single variable that has the best performance under lm.
-Does not include any treatment of undefined -999.0 quantities.
-Uses only one 80/20 split to validate.
+Uses a forward seeking technique to find the optimum model fit to glm.  
+Does not include any treatment of undefined -999.0 quantities.  
+Uses only one 80/20 split to validate.  
 
 ```r
 LinearResult <- function(f, formula.string) {

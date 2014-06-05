@@ -193,9 +193,9 @@ training &lt;- train[training.indices, ]
 validate &lt;- train[-training.indices, ]
 </code></pre>
 
-<p>Find the single variable that has the best performance under lm.
-Does not include any treatment of undefined -999.0 quantities.
-Uses only one 80/20 split to validate.</p>
+<p>Uses a forward seeking technique to find the optimum model fit to glm.<br/>
+Does not include any treatment of undefined -999.0 quantities.<br/>
+Uses only one 80/20 split to validate.  </p>
 
 <pre><code class="r">LinearResult &lt;- function(f, formula.string) {
     formula &lt;- as.formula(paste(formula.string, f))
