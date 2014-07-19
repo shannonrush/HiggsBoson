@@ -1,0 +1,260 @@
+---
+title: "submission 8"
+author: "Shannon Rush"
+date: "July 17, 2014"
+output: pdf_document
+---
+## Submission 8 - Bin on jets, random forest on bins
+
+### Load and Source
+```{r source}
+    source("../helpers/predictions.R")
+```
+```{r load_packages}
+    library(caret)
+    library(doMC)
+    library(rattle)
+    library(rpart.plot)
+```
+```{r load_data, cache=TRUE}
+    train <- read.csv("../../data/processed/processed_train.csv")
+    test <- read.csv("../../data/original/test.csv")
+```
+
+### Clean and Transform Data
+```{r create_validation, cache=TRUE}
+    set.seed(123)
+    training.indices <- createDataPartition(train$Label, p=0.6, list=F)
+    training <- train[training.indices,]
+    validation <- train[-training.indices,]
+```
+```{r bin_by_jets, cache=TRUE}
+    train.jets <- split(train, train$PRI_jet_num)
+    for (i in 0:3) { assign(paste0("train.jets",i),train.jets[[i+1]]) }
+    val.jets <- split(validation, validation$PRI_jet_num)
+    for (i in 0:3) { assign(paste0("val.jets",i),val.jets[[i+1]]) }
+    test.jets <- split(test, test$PRI_jet_num)
+    for (i in 0:3) { assign(paste0("test.jets",i),test.jets[[i+1]]) }
+```
+### 0 Jets
+
+```{r examine_train_jets0, cache=TRUE}
+    summary(train.jets0)
+```
+Since we're going to train 4 separate random forests based on jet bin we can eliminate or transform variables in each group separately. 
+
+A number of variables are set to -999 when there are no jets present.  These should be eliminated in all the jets0
+```{r eliminate_nas, cache=TRUE}
+    remove<-apply(train.jets0[1:nrow(train.jets0),]==-999, 2, all)
+    train.j0 <- train.jets0[,!remove]
+    val.j0 <- val.jets0[,!remove]
+    test.j0 <- test.jets0[,c("EventId",setdiff(names(!remove),"Label"))]
+```
+Now let's see if there's any additional variables to eliminate
+```{r}
+    summary(train.j0)
+```
+PRI_jet_all_pt is defined as all zeros, and of course so is PRI_jet_num so we'll eliminate those
+```{r eliminate_unnecessary, cache=TRUE}
+    keep <- setdiff(names(train.j0),c("PRI_jet_num","PRI_jet_all_pt"))
+    train.j0 <- train.j0[,keep]
+    val.j0 <- val.j0[,keep]
+    test.j0 <- test.j0[,c("EventId",setdiff(keep,"Label"))]
+```
+
+### 1 Jet
+```{r examine_train_jets1, cache=TRUE}
+    summary(train.jets1)
+```
+There are a number of variables that are undefined (all -999s) when there is 1 jet observed.
+```{r eliminate_nas_j1, cache=TRUE}
+    remove <- apply(train.jets1[1:nrow(train.jets1),]==-999, 2, all)
+    train.j1 <- train.jets1[,!remove]
+    val.j1 <- val.jets1[,!remove]
+    test.j1 <- test.jets1[,c("EventId",setdiff(names(!remove),"Label"))]
+```
+```{r examinine_trainj1, cache=TRUE}
+    summary(train.j1)
+```
+Just one more to eliminate: PRI_jet_num
+```{r eliminate_unnecessary_j1, cache=TRUE}
+    keep <- setdiff(names(train.j1),c("PRI_jet_num"))
+    train.j1 <- train.j1[,keep]
+    val.j1 <- val.j1[,keep]
+    test.j1 <- test.j1[,c("EventId",setdiff(keep,"Label"))]
+```
+### 2 Jets 
+```{r examine_train_jets2, cache=TRUE}
+    summary(train.jets2)
+```
+For now only PRI_jet_num can be eliminated when num jets is 2
+```{r eliminate_unnecessary_j2, cache=TRUE}
+    keep <- setdiff(names(train.jets2),c("PRI_jet_num"))
+    train.j2 <- train.jets2[,keep]
+    val.j2 <- val.jets2[,keep]
+    test.j2 <- test.jets2[,c("EventId",setdiff(keep,"Label"))]
+```
+
+### 3 Jets
+```{r examine_train_jets3, cache=TRUE}
+    summary(train.jets3)
+```
+As when jets equals 2, the only feature to eliminate at this stage is PRI_jet_num
+```{r eliminate_unnecessary_j3, cache=TRUE}
+    keep <- setdiff(names(train.jets3),c("PRI_jet_num"))
+    train.j3 <- train.jets3[,keep]
+    val.j3 <- val.jets3[,keep]
+    test.j3 <- test.jets3[,c("EventId",setdiff(keep,"Label"))]
+```
+
+## Models
+
+### 0 Jets
+
+Fit a random forest with train.j0
+```{r rf, cache=TRUE}
+    x <- setdiff(names(train.j0),c("EventId","Label"))
+    set.seed(4646)
+    trainj0.fit <- train(x=train.j0[,x], y=train.j0$Label, method="rf", proxy=T)
+```
+```{r examine_rf, cache=TRUE}
+    trainj0.fit
+    varImp(trainj0.fit)
+```
+```{r predict_val0, cache=TRUE}
+    pred.val0 <- predict(trainj0.fit, val.j0)
+    confusionMatrix(pred.val0, val.j0$Label)
+```
+```{r predict_test0, cache=TRUE}
+    pred.test0 <- predict(trainj0.fit, test.j0, type="prob")
+    pred.0 <- PrepPrediction(pred.test0, test.j0)
+```
+
+### 1 Jet
+
+Fit a random forest with train.j1. Using 8 cores to decrease fit time.
+```{r rf_j1, cache=TRUE}
+    predictors <- train.j1[,setdiff(names(train.j1),c("EventId","Label"))]
+    set.seed(4646)
+    registerDoMC(cores = 8)
+    trainj1.fit <- train(x=predictors, y=train.j1$Label, method="rf", proxy=T,
+                         trControl=trainControl(allowParallel=T))
+```
+```{r examine_rf_j1, cache=TRUE}
+    trainj1.fit
+```
+```{r pred_val1, cache=TRUE}
+    pred.val1 <- predict(trainj1.fit, val.j1)
+    confusionMatrix(pred.val1, val.j1$Label)
+```
+```{r predict_test1, cache=TRUE}
+    pred.test1 <- predict(trainj1.fit, test.j1, type="prob")
+    pred.1 <- PrepPrediction(pred.test1, test.j1)
+```
+
+### 2 Jets
+
+Fit a random forest with train.j2, register 8 cores
+```{r register_for_j2}
+    getDoParWorkers()
+    registerDoMC(cores=8)
+    getDoParWorkers()
+```
+```{r rf_j2, cache=TRUE}
+    predictors <- train.j2[,setdiff(names(train.j2),c("EventId","Label"))]
+    set.seed(4646)
+    getDoParWorkers()
+    trainj2.fit <- train(x=predictors, y=train.j2$Label, method="rf", proxy=T)
+```
+```{r pred_val2, cache=TRUE}
+    pred.val2 <- predict(trainj2.fit, val.j2)
+    confusionMatrix(pred.val2, val.j2$Label)
+```
+```{r predict_test2, cache=TRUE}
+    pred.test2 <- predict(trainj2.fit, test.j2, type="prob")
+    pred.2 <- PrepPrediction(pred.test2, test.j2)
+```
+
+### 3 Jets
+```{r rf_j3, cache=TRUE}
+    predictors <- train.j3[,setdiff(names(train.j3),c("EventId","Label"))]
+    set.seed(4646)
+    registerDoMC(cores=8)
+    getDoParWorkers()
+    trainj3.fit <- train(x=predictors, y=train.j3$Label, method="rf", proxy=T)
+```
+```{r pred_val3, cache=TRUE}
+    pred.val3 <- predict(trainj3.fit, val.j3)
+    confusionMatrix(pred.val3, val.j3$Label)
+```
+```{r predict_test3, cache=TRUE}
+    pred.test3 <- predict(trainj3.fit, test.j3, type="prob")
+    pred.3 <- PrepPrediction(pred.test3, test.j3)
+```
+
+## Submission
+```{r final_submission, cache=TRUE}
+    pred <- rbind(pred.0,pred.1,pred.2,pred.3)
+    WriteSubmission(pred, 8)
+```
+
+
+
+
+
+## Mini Models
+
+In order to speed up random forest processing time I'm going to take just 10% of the jet0 training set and try to optimize for speed
+
+```{r 10_percent_trainj0, cache=TRUE}
+    mini.indices <- createDataPartition(train.j0$Label, p=0.1, list=F)
+    train.minij0 <- train.j0[mini.indices,]
+    dim(train.minij0)
+```
+```{r check_workers, cache=TRUE}
+    getDoParWorkers()
+```
+```{r fit_forest_1_worker, cache=TRUE}
+    predictors <- train.minij0[,setdiff(names(train.j0),c("EventId","Label"))]
+    set.seed(4646)
+    Sys.time()
+    w1.fit <- train(x=predictors, y=train.minij0$Label, method="rf", proxy=T)
+    Sys.time()
+```
+```{r register_domc}
+    registerDoMC(cores=8)
+    getDoParWorkers()
+```
+```{r fit_forest_8_workers, cache=TRUE}
+    set.seed(4646)
+    Sys.time()
+    w8.fit <- train(x=predictors, y=train.minij0$Label, method="rf", proxy=T)
+    Sys.time()
+```
+```{r}
+    registerDoMC(cores=8)
+    getDoParWorkers()
+```
+```{r fit_forest_8_workers_allow_parallel, cache=TRUE}
+    set.seed(4646)
+    Sys.time()
+    w8.allow.fit <- train(x=predictors, y=train.minij0$Label, method="rf", proxy=T,
+                          trControl=trainControl(allowParallel=T))
+    Sys.time()
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

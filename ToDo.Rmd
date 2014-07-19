@@ -15,6 +15,7 @@ ToDo
 [X] Create summary 
 [] Try to publish summary to Rpubs again
 [X] Try a progression of linear models for submission 7
+[] Bin on jets for submission 8
 
 Nearing end:
 [] Upload Model https://www.kaggle.com/forums/t/3821/model-submission-best-practices
