@@ -13,8 +13,6 @@ output: pdf_document
 ```{r load_packages}
     library(caret)
     library(doMC)
-    library(rattle)
-    library(rpart.plot)
 ```
 ```{r load_data, cache=TRUE}
     train <- read.csv("../../data/processed/processed_train.csv")
@@ -129,7 +127,6 @@ Fit a random forest with train.j0
     pred.test0 <- predict(trainj0.fit, test.j0, type="prob")
     pred.0 <- PrepPrediction(pred.test0, test.j0)
 ```
-
 ### 1 Jet
 
 Fit a random forest with train.j1. Using 8 cores to decrease fit time.
@@ -142,6 +139,7 @@ Fit a random forest with train.j1. Using 8 cores to decrease fit time.
 ```
 ```{r examine_rf_j1, cache=TRUE}
     trainj1.fit
+    varImp(trainj1.fit)
 ```
 ```{r pred_val1, cache=TRUE}
     pred.val1 <- predict(trainj1.fit, val.j1)
@@ -166,6 +164,10 @@ Fit a random forest with train.j2, register 8 cores
     getDoParWorkers()
     trainj2.fit <- train(x=predictors, y=train.j2$Label, method="rf", proxy=T)
 ```
+```{r examine_rf_j2, cache=TRUE}
+    trainj2.fit
+    varImp(trainj2.fit)
+```
 ```{r pred_val2, cache=TRUE}
     pred.val2 <- predict(trainj2.fit, val.j2)
     confusionMatrix(pred.val2, val.j2$Label)
@@ -182,6 +184,10 @@ Fit a random forest with train.j2, register 8 cores
     registerDoMC(cores=8)
     getDoParWorkers()
     trainj3.fit <- train(x=predictors, y=train.j3$Label, method="rf", proxy=T)
+```
+```{r examine_rf_j3, cache=TRUE}
+    trainj3.fit
+    varImp(trainj3.fit)
 ```
 ```{r pred_val3, cache=TRUE}
     pred.val3 <- predict(trainj3.fit, val.j3)
@@ -241,6 +247,16 @@ In order to speed up random forest processing time I'm going to take just 10% of
     w8.allow.fit <- train(x=predictors, y=train.minij0$Label, method="rf", proxy=T,
                           trControl=trainControl(allowParallel=T))
     Sys.time()
+```
+
+## RData
+
+```{r save_rdata, cache=TRUE}
+    dir.create("RData")
+    save(trainj0.fit, file="RData/trainj0.RData")
+    save(trainj1.fit, file="RData/trainj1.RData")
+    save(trainj2.fit, file="RData/trainj2.RData")
+    save(trainj3.fit, file="RData/trainj3.RData")
 ```
 
 

@@ -3,8 +3,14 @@
 *.tgz
 *.zip
 *.Rhistory
-*.Rdata
+data/*.Rdata
 *.Rda
 *.rdb
 *.rdx
 __packages
+figures/cache/*
+cache/*
+submissions/*/cache/*
+submissions/*/*_cache/*
+submissions/.RData
+submissions/cache

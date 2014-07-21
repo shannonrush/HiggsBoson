@@ -1,0 +1,217 @@
+---
+title: "Submission 10"
+author: "Shannon Rush"
+date: "July 19, 2014"
+output: pdf_document
+---
+
+Building on submission 8 which fit 4 random forests based on PRI_num_jet
+In this submission I'll keep only those variables with a Gini importance > 10 then run another set of random forests
+I think this will improve accuracy because I think the low Gini importance variables are mostly contributing noise
+
+### Load and Source
+```{r source}
+    source("../helpers/predictions.R")
+```
+```{r load_packages}
+    library(caret)
+    library(doMC)
+```
+```{r load_data, cache=TRUE}
+    train <- read.csv("../../data/processed/processed_train.csv")
+    test <- read.csv("../../data/original/test.csv")
+```
+
+### Clean and Transform Data
+
+Since the submission builds on submission 8 it will use the same seeds 
+```{r create_validation, cache=TRUE}
+    set.seed(123)
+    training.indices <- createDataPartition(train$Label, p=0.6, list=F)
+    training <- train[training.indices,]
+    validation <- train[-training.indices,]
+```
+```{r bin_by_jets, cache=TRUE}
+    train.jets <- split(train, train$PRI_jet_num)
+    for (i in 0:3) { assign(paste0("train.jets",i),train.jets[[i+1]]) }
+    val.jets <- split(validation, validation$PRI_jet_num)
+    for (i in 0:3) { assign(paste0("val.jets",i),val.jets[[i+1]]) }
+    test.jets <- split(test, test$PRI_jet_num)
+    for (i in 0:3) { assign(paste0("test.jets",i),test.jets[[i+1]]) }
+```
+### 0 Jets
+
+```{r eliminate_nas, cache=TRUE}
+    remove<-apply(train.jets0[1:nrow(train.jets0),]==-999, 2, all)
+    train.j0 <- train.jets0[,!remove]
+    val.j0 <- val.jets0[,!remove]
+    test.j0 <- test.jets0[,c("EventId",setdiff(names(!remove),"Label"))]
+```
+```{r eliminate_unnecessary, cache=TRUE}
+    keep <- setdiff(names(train.j0),c("PRI_jet_num","PRI_jet_all_pt"))
+    train.j0 <- train.j0[,keep]
+    val.j0 <- val.j0[,keep]
+    test.j0 <- test.j0[,setdiff(keep,"Label")]
+```
+```{r eliminate_low_gini, cache=TRUE}
+    load("../submission8/RData/trainj0.RData")
+    elim.0 <- row.names(subset(varImp(trainj0.fit)$importance, Overall < 10))
+    keep <- setdiff(names(train.j0),elim.0)
+    train.j0 <- train.j0[,keep]
+    val.j0 <- val.j0[,keep]
+    test.j0 <- test.j0[,setdiff(keep,"Label")]
+```
+```{r}
+    names(train.j0)
+    names(test.j0)
+```
+```{r rf0, cache=TRUE}
+    set.seed(999)
+    predictors <- train.j0[,setdiff(names(train.j0),c("EventId","Label"))]
+    registerDoMC(cores=4)
+    j0.fit <- train(x=predictors, y=train.j0$Label, method="rf", proxy=T)
+```
+```{r}
+    j0.fit
+```
+```{r pred_val0, cache=TRUE}
+    pred.val0 <- predict(j0.fit, val.j0)
+    confusionMatrix(pred.val0, val.j0$Label)
+```
+```{r pred_test0, cache=TRUE}
+    pred.test0 <- predict(j0.fit, test.j0, type="prob")
+    pred.0 <- PrepPrediction(pred.test0, test.j0)
+```
+
+### 1 Jet
+
+```{r eliminate_nas_j1, cache=TRUE}
+    remove <- apply(train.jets1[1:nrow(train.jets1),]==-999, 2, all)
+    train.j1 <- train.jets1[,!remove]
+    val.j1 <- val.jets1[,!remove]
+    test.j1 <- test.jets1[,c("EventId",setdiff(names(!remove),"Label"))]
+```
+```{r eliminate_unnecessary_j1, cache=TRUE}
+    keep <- setdiff(names(train.j1),c("PRI_jet_num"))
+    train.j1 <- train.j1[,keep]
+    val.j1 <- val.j1[,keep]
+    test.j1 <- test.j1[,c("EventId",setdiff(keep,"Label"))]
+```
+```{r eliminate_low_gini_j1, cache=TRUE}
+    load("../submission8/RData/trainj1.RData")
+    elim.1 <- row.names(subset(varImp(trainj1.fit)$importance, Overall < 10))
+    keep <- setdiff(names(train.j1),elim.1)
+    train.j1 <- train.j1[,keep]
+    val.j1 <- val.j1[,keep]
+    test.j1 <- test.j1[,setdiff(keep,"Label")]
+```
+```{r}
+    names(train.j1)
+    names(test.j1)
+```
+```{r rf1, cache=TRUE}
+    set.seed(999)
+    predictors <- train.j1[,setdiff(names(train.j1),c("EventId","Label"))]
+    Sys.time()
+    registerDoMC(cores=4)
+    j1.fit <- train(x=predictors, y=train.j1$Label, method="rf", proxy=T)
+    Sys.time()
+```
+```{r}
+    j1.fit
+```
+```{r pred_val1, cache=TRUE}
+    pred.val1 <- predict(j1.fit, val.j1)
+    confusionMatrix(pred.val1, val.j1$Label)
+```
+```{r pred_test1, cache=TRUE}
+    pred.test1 <- predict(j1.fit, test.j1, type="prob")
+    pred.1 <- PrepPrediction(pred.test1, test.j1)
+```
+### 2 Jets 
+```{r eliminate_unnecessary_j2, cache=TRUE}
+    keep <- setdiff(names(train.jets2),c("PRI_jet_num"))
+    train.j2 <- train.jets2[,keep]
+    val.j2 <- val.jets2[,keep]
+    test.j2 <- test.jets2[,c("EventId",setdiff(keep,"Label"))]
+```
+```{r eliminate_low_gini_j2, cache=TRUE}
+    load("../submission8/RData/trainj2.RData")
+    elim.2 <- row.names(subset(varImp(trainj2.fit)$importance, Overall < 10))
+    keep <- setdiff(names(train.j2),elim.2)
+    train.j2 <- train.j2[,keep]
+    val.j2 <- val.j2[,keep]
+    test.j2 <- test.j2[,setdiff(keep,"Label")]
+```
+```{r}
+    names(train.j2)
+    names(test.j2)
+```
+```{r rf2, cache=TRUE}
+    set.seed(999)
+    predictors <- train.j2[,setdiff(names(train.j2),c("EventId","Label"))]
+    Sys.time()
+    registerDoMC(cores=4)
+    j2.fit <- train(x=predictors, y=train.j2$Label, method="rf", proxy=T)
+    Sys.time()
+```
+```{r}
+    j2.fit
+```
+```{r pred_val2, cache=TRUE}
+    pred.val2 <- predict(j2.fit, val.j2)
+    confusionMatrix(pred.val2, val.j2$Label)
+```
+```{r pred_test2, cache=TRUE}
+    pred.test2 <- predict(j2.fit, test.j2, type="prob")
+    pred.2 <- PrepPrediction(pred.test2, test.j2)
+```
+### 3 Jets
+```{r eliminate_unnecessary_j3, cache=TRUE}
+    keep <- setdiff(names(train.jets3),c("PRI_jet_num"))
+    train.j3 <- train.jets3[,keep]
+    val.j3 <- val.jets3[,keep]
+    test.j3 <- test.jets3[,c("EventId",setdiff(keep,"Label"))]
+```
+```{r eliminate_low_gini_j3, cache=TRUE}
+    load("../submission8/RData/trainj3.RData")
+    elim.3 <- row.names(subset(varImp(trainj3.fit)$importance, Overall < 10))
+    keep <- setdiff(names(train.j3),elim.3)
+    train.j3 <- train.j3[,keep]
+    val.j3 <- val.j3[,keep]
+    test.j3 <- test.j3[,setdiff(keep,"Label")]
+```
+```{r}
+    names(train.j3)
+    names(test.j3)
+```
+```{r rf3, cache=TRUE}
+    set.seed(999)
+    predictors <- train.j3[,setdiff(names(train.j3),c("EventId","Label"))]
+    Sys.time()
+    registerDoMC(cores=4)
+    j3.fit <- train(x=predictors, y=train.j3$Label, method="rf", proxy=T)
+    Sys.time()
+```
+```{r}
+    j3.fit
+```
+```{r pred_val3, cache=TRUE}
+    pred.val3 <- predict(j3.fit, val.j3)
+    confusionMatrix(pred.val3, val.j3$Label)
+```
+```{r pred_test3, cache=TRUE}
+    pred.test3 <- predict(j3.fit, test.j3, type="prob")
+    pred.3 <- PrepPrediction(pred.test3, test.j3)
+```
+## Submission
+```{r final_submission, cache=TRUE}
+    pred <- rbind(pred.0,pred.1,pred.2,pred.3)
+    WriteSubmission(pred, 10)
+```
+
+## Result
+2.69242
+
+
+

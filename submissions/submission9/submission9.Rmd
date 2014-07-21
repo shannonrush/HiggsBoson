@@ -1,0 +1,58 @@
+---
+title: "Submission 9"
+author: "Shannon Rush"
+date: "July 19, 2014"
+output: pdf_document
+---
+
+A single generalized boosted regression model.
+
+## Loading 
+```{r source, cache=TRUE}
+    source("../helpers/predictions.R")
+```
+```{r packages, cache=TRUE}
+    library(caret)
+    library(doMC)
+```
+```{r load_data, cache=TRUE}
+    train <- read.csv("../../data/processed/processed_train.csv")
+    test <- read.csv("../../data/original/test.csv")
+```
+
+## Data
+```{r create_validation, cache=TRUE}
+    set.seed(123)
+    training.indices <- createDataPartition(train$Label, p=0.6, list=F)
+    training <- train[training.indices,]
+    validation <- train[-training.indices,]
+```
+
+## Models
+
+Fit a GBM with training data
+
+```{r gbm, cache=TRUE}
+    predictors <- training[,setdiff(names(training),c("Label","EventId"))]
+    registerDoMC(cores=8)
+    gbm.fit <- train(x=predictors, y=training$Label, method="gbm")
+```
+```{r examine_gbm, cache=TRUE}
+    gbm.fit
+```
+
+```{r gbm_val, cache=TRUE}
+    val <- validation[,setdiff(names(validation),c("EventId","Label"))]
+    pred.val <- predict(gbm.fit, val)
+    confusionMatrix(pred.val, validation$Label)
+```
+```{r pred_test, cache=TRUE}
+    pred.test <- predict(gbm.fit, test, type="prob")
+    pred.df <- PrepPrediction(pred.test, test)
+    WriteSubmission(pred.df, 9)
+```
+
+
+
+
+
