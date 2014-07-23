@@ -1,0 +1,72 @@
+---
+title: "Submission 13"
+author: "Shannon Rush"
+date: "July 23, 2014"
+output: pdf_document
+---
+
+ADA 
+
+### Load and Source
+```{r source}
+    source("../helpers/predictions.R")
+```
+```{r load_packages}
+    library(caret)
+    library(ada)
+```
+```{r load_data, cache=TRUE}
+    train <- read.csv("../../data/original/training.csv")
+    test <- read.csv("../../data/original/test.csv")
+```
+
+### Data Processing
+```{r create_validation, cache=TRUE}
+    set.seed(1111)
+    training.indices <- createDataPartition(train$Label, p=0.6, list=F)
+    training <- train[training.indices,]
+    validation <- train[-training.indices,]
+```
+
+### Models
+```{r, eval=FALSE}
+    set.seed(646)
+    predictors <- training[,setdiff(names(training),c("EventId","Label","Weight"))]
+    ada.fit <- ada(x=predictors, y=training$Label, verbose=T)
+```
+```{r load_adafit, cache=TRUE}
+    load("RData/adafit.RData")
+```
+```{r pred_val, cache=TRUE}
+    pred.val <- predict(ada.fit, validation[,setdiff(names(training),c("EventId","Weight"))])
+    confusionMatrix(pred.val, validation$Label)
+```
+```{r ada_full, cache=TRUE}
+    set.seed(464)
+    predictors <- train[,setdiff(names(train),c("EventId","Label","Weight"))]
+    adafull.fit <- ada(x=predictors, y=train$Label, verbose=T)
+```
+```{r examine_adafull, cache=TRUE}
+    adafull.fit
+```
+```{r pred_test, cache=TRUE}
+    sub.test <- test[,setdiff(names(test), c("EventId","Weight"))]
+    pred <- predict(adafull.fit, sub.test, type=c("probs"))
+```
+```{r examine_pred}
+    head(pred)
+    pred <- as.data.frame(pred)
+    names(pred) <- c("b","s")
+```
+
+```{r pred, cache=TRUE}
+    pred.final <- PrepPrediction(pred, test)
+    WriteSubmission(pred.final, 13)
+```
+### Results
+2.66179
+
+
+
+
+
