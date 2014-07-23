@@ -1,0 +1,55 @@
+---
+title: "Submission 12"
+author: "Shannon Rush"
+date: "July 21, 2014"
+output: pdf_document
+---
+
+1 caret RF with full training set
+
+### Load and Source
+```{r source}
+    source("../helpers/predictions.R")
+    source("../helpers/aws.R")
+```
+```{r load_packages}
+    library(caret)
+    library(doMC)
+```
+```{r load_data, cache=TRUE}
+    train <- read.csv("../../data/original/training.csv")
+    test <- read.csv("../../data/original/test.csv")
+```
+### AWS
+
+```{r, eval=FALSE}
+    PutObject(key="train.RData", body="/Users/shannonmrush/git/HiggsBoson/data/train.RData")
+```
+
+### Random Forests
+Completed in AWS
+
+```{r rf1, eval=FALSE}
+     predictors <- train[,setdiff(names(train),c("EventId","Label","Weight"))]
+    set.seed(111)
+    registerDoMC(cores=6)
+    rf1.fit <- train(x=predictors, y=train$Label, method="rf",trControl=trainControl(verboseIter=T))
+```
+
+```{r, eval=FALSE}
+    download.file("https://s3.amazonaws.com/cloudier/rf1fit.RData", destfile="RData/rf1fit.RData",
+                  method="curl")
+    load("RData/rf1fit.RData")
+    rf1.fit
+```
+```{r, eval=FALSE}
+    pred <- predict(rf1.fit, test, type="prob")
+    pred.final <- PrepPrediction(pred, test)
+    WriteSubmission(pred.final, 12)
+```
+
+### Results
+2.88717
+
+
+
