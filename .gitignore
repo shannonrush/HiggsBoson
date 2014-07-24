@@ -3,7 +3,7 @@
 *.tgz
 *.zip
 *.Rhistory
-data/*.Rdata
+*.Rdata
 *.Rda
 *.rdb
 *.rdx
@@ -14,5 +14,3 @@ submissions/*/cache/*
 submissions/*/*_cache/*
 submissions/.RData
 submissions/cache
-submissions/submission12/RData/*
-submissions/submission13/RData/*

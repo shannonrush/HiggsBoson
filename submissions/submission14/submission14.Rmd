@@ -1,0 +1,44 @@
+---
+title: "Submission 14"
+author: "Shannon Rush"
+date: "July 23, 2014"
+output: pdf_document
+---
+
+ntree tune RF
+
+### Load and Source
+```{r source}
+    source("../helpers/predictions.R")
+```
+```{r load_packages}
+    library(randomForest)
+```
+```{r load_data, cache=TRUE}
+    train <- read.csv("../../data/original/training.csv")
+    test <- read.csv("../../data/original/test.csv")
+```
+
+### Model
+
+ntree = 1000
+```{r rf3, eval=FALSE}
+    set.seed(333)
+    rf3.fit <- randomForest(x=predictors, y=train$Label, do.trace=T, ntree=1000)
+    save(rf3.fit, file="RData/rf3fit.RData")
+```
+```{r load_rf3fit, cache=TRUE}
+    load("RData/rf3fit.RData")
+```
+```{r examine_rf3fit, cache=TRUE}
+    rf3.fit
+```
+```{r pred}
+    p <- predict(rf3.fit, test, type="prob")
+    pred <- PrepPrediction(p, test)
+    WriteSubmission(pred, 14)
+```
+
+
+
+

@@ -1,0 +1,36 @@
+---
+title: "Submission 16"
+author: "Shannon Rush"
+date: "July 24, 2014"
+output: pdf_document
+---
+
+Adaptive boosted RF
+
+### Load and Source
+```{r source}
+    source("../helpers/boostedRF.R")
+```
+```{r load_data, cache=TRUE}
+    train <- read.csv("../../data/original/training.csv")
+    test <- read.csv("../../data/original/test.csv")
+```
+
+### Model
+```{r}
+    x.names <- setdiff(names(train),c("EventId","Label","Weight"))
+    y.name <- "Label"
+```
+```{r}
+    pred.1 <- boostedRF(x=x.names, y=y.name, train=train, test=test, ntree=250)
+    write.csv(pred.1, file="submission16.csv", row.names=F, quote=F)
+```
+2.87288
+
+Changing boostedRF to make first forest use unsampled train
+```{r}
+    pred.2 <- boostedRF(x=x.names, y=y.name, train=train, test=test, ntree=250)
+    write.csv(pred.2, file="submission16b.csv", row.names=F, quote=F)
+```
+2.88715
+
