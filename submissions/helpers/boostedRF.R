@@ -2,7 +2,7 @@ library(randomForest)
 library(plyr)
 
 boostedRF <- function(x.names, y.name, train, test, m=5, verbose=T, ntree=500, mtry=NULL) {
-    mtry <- ifelse(is.null(mtry),floor(sqrt(ncol(train))),mtry)
+    mtry <- ifelse(is.null(mtry), floor(sqrt(ncol(train))), mtry)
     K <- nlevels(train[,y.name])
     C <- matrix(nrow=nrow(test), ncol=m)
     # this is just for Higgs Boson, could be generalized 
@@ -14,18 +14,29 @@ boostedRF <- function(x.names, y.name, train, test, m=5, verbose=T, ntree=500, m
     A <- numeric(m)
     t <- train
     for (i in 1:m) {
+        print(paste("FOREST",i))
         fit <- randomForest(t[,x.names], t[,y.name], do.trace=verbose, ntree=ntree, mtry=mtry)
         pred <- as.data.frame(predict(fit, test, type="prob"))
+        print("test prediction made")
         C[,i] <- apply(pred, 1, function(p) ifelse(p["s"] > p["b"], "s", "b"))
         probs <- (probs+pred$s)/i
+        rm(pred)
+        print("test prediction removed")
         h <- predict(fit, train) # predict classes on training 
+        print("train prediction made")
+        rm(fit) # free up memory
+        print("fit removed")
         levels(h)<-levels(t[,y.name]) # rebalancing levels
         misses <- as.numeric(h!=t[,y.name])
+        rm(h)
+        print("train prediction removed")
         err <- error(w, misses)
         A[i] <- alpha(err, K) # one weighted error value for each forest
         w <- weights(w, A[i], misses)
+        print("weights recalculated")
         t <- train[sample(n, n, replace=T, prob=w), ]
         t[,y.name]<-droplevels(t[,y.name]) # in case any outcomes are not sampled
+        print("resampling complete")
     }
     finalPrediction(C, A, probs)
 }
