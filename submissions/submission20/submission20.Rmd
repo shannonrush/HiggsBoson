@@ -1,0 +1,121 @@
+---
+title: "submission20"
+author: "Shannon Rush"
+date: "July 25, 2014"
+output: pdf_document
+---
+
+Building on submission 19 with 6 more prob_boosted RFs
+
+## Load
+```{r}
+    load("../submission19/RData/workspace.RData")
+```
+```{r}
+    source("../helpers/prob_boost.R")
+```
+```{r}
+    library(randomForest)
+    library(plyr)
+```
+```{r load_data}
+    train <- read.csv("../../data/original/training.csv")
+    test <- read.csv("../../data/original/test.csv")
+```
+```{r}
+    n <- nrow(train)
+```
+
+### RF6
+
+```{r}
+    set.seed(196)
+    rf6 <- randomForest(x=t[,predictors], y=t$Label, do.trace=T)
+    pred.test6 <- predict(rf6, test, type="prob")
+    MeanDiff(as.data.frame(pred.test6))
+    pred.class6 <- PredClass(pred.test6)
+    pred <- cbind(pred,pred.class6)
+    pred.train6 <- as.data.frame(predict(rf6, train, type="prob"))
+    MeanDiff(pred.train6)
+    t <- train[sample(n, n, T, Weights(pred.train6)),]
+```
+### RF7
+
+```{r}
+    set.seed(197)
+    rf7 <- randomForest(x=t[,predictors], y=t$Label, do.trace=T)
+    pred.test7 <- predict(rf7, test, type="prob")
+    pred.class7 <- PredClass(pred.test7)
+    pred <- cbind(pred, pred.class7)
+    pred.train7 <- as.data.frame(predict(rf7, train, type="prob"))
+    t <- train[sample(n, n, T, Weights(pred.train7)),]
+```
+
+### RF8
+
+```{r}
+    set.seed(198)
+    rf8 <- randomForest(x=t[,predictors], y=t$Label, do.trace=T)
+    pred.test8 <- predict(rf8, test, type="prob")
+    pred.class8 <- PredClass(pred.test8)
+    pred <- cbind(pred, pred.class8)
+    pred.train8 <- as.data.frame(predict(rf8, train, type="prob"))
+    t <- train[sample(n, n, T, Weights(pred.train8)),]
+```
+
+### RF9
+
+```{r}
+    set.seed(199)
+    rf9 <- randomForest(x=t[,predictors], y=t$Label, do.trace=T)
+    pred.test9 <- predict(rf9, test, type="prob")
+    pred.class9 <- PredClass(pred.test9)
+    pred <- cbind(pred, pred.class9)
+    pred.train9 <- as.data.frame(predict(rf9, train, type="prob"))
+    t <- train[sample(n, n, T, Weights(pred.train9)),]
+```
+
+### RF10
+
+```{r}
+    set.seed(200)
+    rf10 <- randomForest(x=t[,predictors], y=t$Label, do.trace=T)
+    pred.test10 <- predict(rf10, test, type="prob")
+    pred.class10 <- PredClass(pred.test10)
+    pred <- cbind(pred, pred.class10)
+    pred.train10 <- as.data.frame(predict(rf10, train, type="prob"))
+    t <- train[sample(n, n, T, Weights(pred.train10)),]
+```
+### RF11
+
+```{r}
+    set.seed(201)
+    rf11 <- randomForest(x=t[,predictors], y=t$Label, do.trace=T)
+    pred.test11 <- predict(rf11, test, type="prob")
+    pred.class11 <- PredClass(pred.test11)
+    pred <- cbind(pred, pred.class11)
+    pred.train11 <- as.data.frame(predict(rf11, train, type="prob"))
+    t <- train[sample(n, n, T, Weights(pred.train11)),]
+```
+
+## Prediction
+```{r}
+    all.agree <- apply(pred, 1, function(a) all(a=="b")|all(a=="s"))
+    sum(all.agree)/nrow(pred)
+    nrow(pred)-sum(all.agree)
+```
+```{r}
+    max.votes <- apply(pred, 1, function(x) ifelse(sum(x=="b") > sum(x=="s"), "b", "s"))
+    probs <- (pred.test1[,2] + pred.test2[,2] + pred.test3[,2] + pred.test4[,2] + pred.test5[,2]+pred.test6[,2] + pred.test7[,2] + pred.test8[,2] + pred.test9[,2] + pred.test10[,2] + pred.test11[,2])/11
+    df <- data.frame(EventId=test$EventId,probs=probs,Class=max.votes)
+    ordered.df <- arrange(df, probs)
+    final.df <- data.frame(EventId=ordered.df$EventId, RankOrder=1:550000, Class=ordered.df$Class)
+    write.csv(final.df, file="submission20.csv", row.names=F, quote=F)
+```
+2.91125
+```{r}
+    disagree <- test[-which(all.agree),]
+    disagree.pred <- pred[-which(all.agree),]
+    disagree.probs <- probs[-which(all.agree)]
+    mean(disagree.probs)
+```

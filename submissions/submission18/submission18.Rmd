@@ -1,0 +1,88 @@
+---
+title: "Submission 18"
+author: "Shannon Rush"
+date: "July 25, 2014"
+output: pdf_document
+---
+
+Bagging 5 RFs with ntree=500
+```{r}
+    library(randomForest)
+    library(plyr)
+```
+```{r load_data}
+    train <- read.csv("../../data/original/training.csv")
+    test <- read.csv("../../data/original/test.csv")
+```
+```{r}
+    predictors <- train[,setdiff(names(train),c("EventId","Label","Weight"))]
+```
+```{r}
+    set.seed(181)
+    rf1 <- randomForest(x=predictors, y=train$Label, do.trace=T)
+    test.pred1 <- predict(rf1, test, type="prob")
+    pred.class1 <- apply(test.pred1, 1, function(x) ifelse(x["b"] > x["s"], "b", "s"))
+```
+```{r}
+    set.seed(182)
+    rf2 <- randomForest(x=predictors, y=train$Label, do.trace=T)
+    test.pred2 <- predict(rf2, test, type="prob")
+    pred.class2 <- apply(test.pred2, 1, function(x) ifelse(x["b"] > x["s"], "b", "s"))
+```
+```{r}
+    set.seed(183)
+    rf3 <- randomForest(x=predictors, y=train$Label, do.trace=T)
+    test.pred3 <- predict(rf3, test, type="prob")
+    pred.class3 <- apply(test.pred3, 1, function(x) ifelse(x["b"] > x["s"], "b", "s"))
+```
+```{r}
+    set.seed(184)
+    rf4 <- randomForest(x=predictors, y=train$Label, do.trace=T)
+    test.pred4 <- predict(rf4, test, type="prob")
+    pred.class4 <- apply(test.pred4, 1, function(x) ifelse(x["b"] > x["s"], "b", "s"))
+```
+```{r}
+    set.seed(185)
+    rf5 <- randomForest(x=predictors, y=train$Label, do.trace=T)
+    test.pred5 <- predict(rf5, test, type="prob")
+    pred.class5 <- apply(test.pred5, 1, function(x) ifelse(x["b"] > x["s"], "b", "s"))
+```
+```{r}
+    pred <- data.frame(pred.class1, pred.class2, pred.class3, pred.class4, pred.class5)
+    all.agree <- apply(pred, 1, function(a) all(a=="b")|all(a=="s"))
+    sum(all.agree)/nrow(pred)
+    nrow(pred)-sum(all.agree)
+```
+```{r}
+    max.votes <- apply(pred, 1, function(x) ifelse(sum(x=="b") > sum(x=="s"), "b", "s"))
+    probs <- (test.pred1[,2] + test.pred2[,2] + test.pred3[,2] + test.pred4[,2] + test.pred5[,2])/5
+    df <- data.frame(EventId=test$EventId,probs=probs,Class=max.votes)
+    ordered.df <- arrange(df, probs)
+    final.df <- data.frame(EventId=ordered.df$EventId, RankOrder=1:550000, Class=ordered.df$Class)
+    write.csv(final.df, file="submission18.csv", row.names=F, quote=F)
+```
+2.90210
+
+```{r}
+    disagree <- test[-which(all.agree),]
+    disagree.pred <- pred[-which(all.agree),]
+    disagree.probs <- probs[-which(all.agree)]
+    mean(disagree.probs)
+```
+```{r}
+    summary(disagree)
+    table(disagree$PRI_jet_num)
+```
+
+
+
+
+### Questions
+
+X Do forests mostly agree? 97% agree
+X If so, what are the characteristics of those disagreed? 
+    * Indecisive - P(s) closer to 0.5
+Why do I see 100% accuracy on held out validation sets?
+Do 10 bagged RFs outperform 5?
+
+

@@ -1,0 +1,162 @@
+---
+title: "submission19"
+author: "Shannon Rush"
+date: "July 25, 2014"
+output: pdf_document
+---
+
+Boosting RF with higher sample weight given when approaching P("s")=.5
+
+## Load
+```{r}
+    library(randomForest)
+    library(plyr)
+```
+```{r load_data}
+    train <- read.csv("../../data/original/training.csv")
+    test <- read.csv("../../data/original/test.csv")
+```
+```{r}
+    predictors <- setdiff(names(train),c("EventId","Label","Weight"))
+    n <- nrow(train)
+```
+## Functions
+
+```{r}
+    MeanDiff <- function(pred) {
+        mean(abs(pred$b-pred$s))
+    }
+
+    Weights <- function(pred) {
+        1-abs(1-(pred$s/.5))
+    }
+
+    PredClass <- function(pred) {
+        apply(pred, 1, function(x) ifelse(x["b"] > x["s"], "b", "s"))
+    }
+```
+
+## Models
+Run an unsampled RF
+```{r}
+    set.seed(191)
+    rf1 <- randomForest(x=train[,predictors], y=train$Label, do.trace=T)
+```
+Predict on test
+```{r}
+    pred.test1 <- predict(rf1, test, type="prob")
+    pred.class1 <- PredClass(pred.test1)
+```
+Predict on train
+```{r}
+    pred.train1 <- predict(rf1, train, type="prob")
+    pred.train1 <- as.data.frame(pred.train1)
+```
+```{r}
+    MeanDiff(pred.train1)
+```
+0.819479
+
+Get weights based on probabilities
+```{r}
+    w <- 1-abs(1-(pred.train1$s/.5))
+```
+Get a new training sample, picking those observations the last forest was more indecisive about more often
+```{r}
+    t <- train[sample(n, n, T, w),]
+```
+## RF2 
+
+Run another RF with the new sample
+```{r}
+    set.seed(192)
+    rf2 <- randomForest(x=t[,predictors], y=t$Label, do.trace=T)
+```
+Predict on test
+```{r}
+    pred.test2 <- predict(rf2, test, type="prob")
+    pred.class2 <- PredClass(pred.test2)
+```
+Predict on train
+```{r}
+    pred.train2 <- as.data.frame(predict(rf2, train, type="prob"))
+```
+
+```{r}
+    MeanDiff(pred.train2)
+```
+0.6209119
+```{r}
+    t <- train[sample(n, n, T, Weights(pred.train2)),]
+```
+
+### RF3
+
+```{r}
+    set.seed(193)
+    rf3 <- randomForest(x=t[,predictors], y=t$Label, do.trace=T)
+    pred.test3 <- predict(rf3, test, type="prob")
+    pred.class3 <- PredClass(pred.test3)
+    pred.train3 <- as.data.frame(predict(rf3, train, type="prob"))
+    MeanDiff(pred.train3)
+    t <- train[sample(n, n, T, Weights(pred.train3)),]
+```
+0.8115788
+
+### RF4
+
+```{r}
+    set.seed(194)
+    rf4 <- randomForest(x=t[,predictors], y=t$Label, do.trace=T)
+    pred.test4 <- predict(rf4, test, type="prob")
+    pred.class4 <- PredClass(pred.test4)
+    pred.train4 <- as.data.frame(predict(rf4, train, type="prob"))
+    MeanDiff(pred.train4)
+    t <- train[sample(n, n, T, Weights(pred.train4)),]
+```
+
+### RF5
+
+```{r}
+    set.seed(195)
+    rf5 <- randomForest(x=t[,predictors], y=t$Label, do.trace=T)
+    pred.test5 <- predict(rf5, test, type="prob")
+    pred.class5 <- PredClass(pred.test5)
+    pred.train5 <- as.data.frame(predict(rf5, train, type="prob"))
+    MeanDiff(pred.train5)
+    t <- train[sample(n, n, T, Weights(pred.train5)),]
+```
+
+## Prediction
+```{r}
+    pred <- data.frame(pred.class1, pred.class2, pred.class3, pred.class4, pred.class5)
+    all.agree <- apply(pred, 1, function(a) all(a=="b")|all(a=="s"))
+    sum(all.agree)/nrow(pred)
+    nrow(pred)-sum(all.agree)
+```
+```{r}
+    max.votes <- apply(pred, 1, function(x) ifelse(sum(x=="b") > sum(x=="s"), "b", "s"))
+    probs <- (pred.test1[,2] + pred.test2[,2] + pred.test3[,2] + pred.test4[,2] + pred.test5[,2])/5
+    df <- data.frame(EventId=test$EventId,probs=probs,Class=max.votes)
+    ordered.df <- arrange(df, probs)
+    final.df <- data.frame(EventId=ordered.df$EventId, RankOrder=1:550000, Class=ordered.df$Class)
+    write.csv(final.df, file="submission19.csv", row.names=F, quote=F)
+```
+2.91569
+```{r}
+    disagree <- test[-which(all.agree),]
+    disagree.pred <- pred[-which(all.agree),]
+    disagree.probs <- probs[-which(all.agree)]
+    mean(disagree.probs)
+```
+
+
+
+
+
+## Questions
+
+Do 10 ProbBoostedRFs outperform 5?
+
+
+

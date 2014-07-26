@@ -1,0 +1,51 @@
+---
+title: "submission21"
+author: "Shannon Rush"
+date: "July 26, 2014"
+output: pdf_document
+---
+
+Using predictions from submission 20, making final prediction with weighted votes
+
+## Load
+```{r}
+    load("../submission20/RData/workspace.RData")
+```
+```{r}
+    source("../helpers/prob_boost.R")
+```
+```{r}
+    library(plyr)
+```
+```{r load_data}
+    test <- read.csv("../../data/original/test.csv")
+```
+
+## Prediction
+
+```{r}
+    pred.probs <- list(pred.test1, pred.test2, pred.test3, pred.test4, pred.test5,
+                       pred.test6, pred.test7, pred.test8, pred.test9, pred.test10, pred.test11)
+    weighted.votes <- character(n)
+    for (i in 1:nrow(pred)) {
+        row <- pred[i,]
+        b <- 0
+        s <- 0
+        for (j in 1:length(row)) {
+            if (row[j] == "b") {
+                b <- b + pred.probs[[j]][i, row[[j]]]
+            } else {
+                s <- s + pred.probs[[j]][i, row[[j]]]
+            }
+        }
+        weighted.votes[i] <- ifelse(b > s, "b", "s")
+    }
+    df <- data.frame(EventId=test$EventId, probs=probs, Class=weighted.votes)
+    ordered.df <- arrange(df, probs)
+    final.df <- data.frame(EventId=ordered.df$EventId, RankOrder=1:550000, Class=ordered.df$Class)
+    write.csv(final.df, file="submission21.csv", row.names=F, quote=F)
+```
+2.91086
+
+
+
