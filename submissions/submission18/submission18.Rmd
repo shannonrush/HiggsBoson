@@ -83,6 +83,6 @@ X Do forests mostly agree? 97% agree
 X If so, what are the characteristics of those disagreed? 
     * Indecisive - P(s) closer to 0.5
 Why do I see 100% accuracy on held out validation sets?
-Do 10 bagged RFs outperform 5?
+Do 11 bagged RFs outperform 5 (all ntree=500)?
 
 

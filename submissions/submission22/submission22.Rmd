@@ -1,0 +1,86 @@
+---
+title: "submission22"
+author: "Shannon Rush"
+date: "July 26, 2014"
+output: html_document
+---
+
+Building on submission 18, adding 6 more RFs and bagging without boosting
+
+```{r}
+    load("../submission18/RData/workspace.RData")
+```
+```{r}
+    library(randomForest)
+    library(plyr)
+```
+```{r load_data}
+    train <- read.csv("../../data/original/training.csv")
+    test <- read.csv("../../data/original/test.csv")
+```
+```{r}
+    predictors <- train[,setdiff(names(train),c("EventId","Label","Weight"))]
+```
+## RF 6
+```{r}
+    set.seed(226)
+    rf6 <- randomForest(x=predictors, y=train$Label, do.trace=T)
+    test.pred6 <- predict(rf6, test, type="prob")
+    pred.class6 <- apply(test.pred6, 1, function(x) ifelse(x["b"] > x["s"], "b", "s"))
+    pred <- cbind(pred, pred.class6)
+```
+## RF 7
+```{r}
+    set.seed(227)
+    rf7 <- randomForest(x=predictors, y=train$Label, do.trace=T)
+    test.pred7 <- predict(rf7, test, type="prob")
+    pred.class7 <- apply(test.pred7, 1, function(x) ifelse(x["b"] > x["s"], "b", "s"))
+    pred <- cbind(pred, pred.class7)
+```
+## RF 8
+```{r}
+    set.seed(228)
+    rf8 <- randomForest(x=predictors, y=train$Label, do.trace=T)
+    test.pred8 <- predict(rf8, test, type="prob")
+    pred.class8 <- apply(test.pred8, 1, function(x) ifelse(x["b"] > x["s"], "b", "s"))
+    pred <- cbind(pred, pred.class8)
+```
+## RF 9
+```{r}
+    set.seed(229)
+    rf9 <- randomForest(x=predictors, y=train$Label, do.trace=T)
+    test.pred9 <- predict(rf9, test, type="prob")
+    pred.class9 <- apply(test.pred9, 1, function(x) ifelse(x["b"] > x["s"], "b", "s"))
+    pred <- cbind(pred, pred.class9)
+```
+## RF 10
+```{r}
+    set.seed(230)
+    rf10 <- randomForest(x=predictors, y=train$Label, do.trace=T)
+    test.pred10 <- predict(rf10, test, type="prob")
+    pred.class10 <- apply(test.pred10, 1, function(x) ifelse(x["b"] > x["s"], "b", "s"))
+    pred <- cbind(pred, pred.class10)
+```
+## RF 11
+```{r}
+    set.seed(231)
+    rf11 <- randomForest(x=predictors, y=train$Label, do.trace=T)
+    test.pred11 <- predict(rf11, test, type="prob")
+    pred.class11 <- apply(test.pred11, 1, function(x) ifelse(x["b"] > x["s"], "b", "s"))
+    pred <- cbind(pred, pred.class11)
+```
+## Prediction
+```{r}
+    all.agree <- apply(pred, 1, function(a) all(a=="b")|all(a=="s"))
+    sum(all.agree)/nrow(pred)
+    nrow(pred)-sum(all.agree)
+```
+```{r}
+    max.votes <- apply(pred, 1, function(x) ifelse(sum(x=="b") > sum(x=="s"), "b", "s"))
+    probs <- (test.pred1[,2] + test.pred2[,2] + test.pred3[,2] + test.pred4[,2] + test.pred5[,2]+test.pred6[,2] + test.pred7[,2] + test.pred8[,2] + test.pred9[,2] + test.pred10[,2] + test.pred11[,2])/11
+    df <- data.frame(EventId=test$EventId,probs=probs,Class=max.votes)
+    ordered.df <- arrange(df, probs)
+    final.df <- data.frame(EventId=ordered.df$EventId, RankOrder=1:550000, Class=ordered.df$Class)
+    write.csv(final.df, file="submission22.csv", row.names=F, quote=F)
+```
+2.90239
