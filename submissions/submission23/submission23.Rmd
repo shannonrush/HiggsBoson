@@ -1,0 +1,422 @@
+---
+title: "submission23"
+author: "Shannon Rush"
+date: "July 28, 2014"
+output: pdf_document
+---
+
+Neural network fit with nnet, with tuned parameters using 40% validation
+
+### Load and Source
+```{r source}
+    source("../helpers/predictions.R")
+```
+```{r load_packages}
+    library(caret)
+    library(plyr)
+    library(nnet)
+```
+```{r load_data, cache=TRUE}
+    train <- read.csv("../../data/original/training.csv")
+    test <- read.csv("../../data/original/test.csv")
+```
+
+### Data Processing
+```{r create_validation, cache=TRUE}
+    set.seed(2233)
+    training.indices <- createDataPartition(train$Label, p=0.6, list=F)
+    predictors <- setdiff(names(train),c("EventId","Weight"))
+    training <- train[training.indices, predictors]
+    validation <<- train[-training.indices, predictors]
+```
+
+### Models
+
+## Functions
+```{r}
+    FitNnet <- function(size=1, decay=0.1, maxit=100, abstol=1.0e-4, reltol=1.0e-8, seed=111, 
+                        training, val) {
+        set.seed(seed)
+        fit <- nnet(Label~., data=training, size=size, decay=decay, maxit=maxit, abstol=abstol, reltol=reltol) 
+        pred <- predict(fit, val, type="class")
+        confusionMatrix(pred, val$Label)
+    } 
+```
+
+
+## Defaults
+```{r}
+    nnet.fit <- nnet(Label~., data=training, size=1, decay=0, maxit=100, abstol=1.0e-4, reltol=1.0e-8) 
+    val.pred <- predict(nnet.fit, validation, type="class")
+    confusionMatrix(val.pred, validation$Label)
+```
+
+## Tuning Decay
+
+.7056
+```{r}
+    nnet.fit2 <- nnet(Label~., data=training, size=1, decay=0.1, maxit=100, abstol=1.0e-4, reltol=1.0e-8) 
+    val.pred2 <- predict(nnet.fit2, validation, type="class")
+    confusionMatrix(val.pred2, validation$Label)
+```
+.7065
+```{r}
+    nnet.fit3 <- nnet(Label~., data=training, size=1, decay=0.2, maxit=100, abstol=1.0e-4, reltol=1.0e-8) 
+    val.pred3 <- predict(nnet.fit3, validation, type="class")
+    confusionMatrix(val.pred3, validation$Label)
+```
+.7166
+```{r}
+    nnet.fit4 <- nnet(Label~., data=training, size=1, decay=0.3, maxit=100, abstol=1.0e-4, reltol=1.0e-8) 
+    val.pred4 <- predict(nnet.fit4, validation, type="class")
+    confusionMatrix(val.pred4, validation$Label)
+```
+.7364
+```{r}
+    FitNnet(decay=0.4)
+```
+.7041
+```{r}
+    FitNnet(decay=0.5)
+```
+.6937
+
+## Tuning MaxIt
+```{r}
+    FitNnet(decay=0.3, maxit=200)
+```
+.7556
+```{r}
+    FitNnet(decay=0.3, maxit=300)
+```
+.7555
+
+## Tuning Size
+
+### Size = 2
+```{r}
+    FitNnet(decay=0.3, maxit=300, size=2)
+```
+.7801
+
+Didn't converge, increasing maxit
+```{r}
+    FitNnet(decay=0.3, maxit=400, size=2)
+```
+.7923
+Didn't converge, increasing maxit again
+```{r}
+    FitNnet(decay=0.3, maxit=500, size=2, seed=454)
+```
+.8157
+
+### Size = 3
+```{r}
+    FitNnet(decay=0.3, maxit=500, size=3, seed=455)
+```
+.7925
+```{r}
+    FitNnet(decay=0.3, maxit=1000, size=3, seed=455)
+```
+.7931
+```{r}
+    FitNnet(decay=0.2, maxit=1000, size=3, seed=455)
+```
+.7962
+```{r}
+    FitNnet(decay=0.1, maxit=1000, size=3, seed=455)
+```
+8.2
+```{r}
+    FitNnet(decay=0, maxit=1000, size=3, seed=455)
+```
+.7956
+```{r}
+    FitNnet(decay=0.4, maxit=1000, size=3, seed=455)
+```
+.7885
+### Size = 4
+
+```{r}
+    FitNnet(decay=0.3, maxit=1000, size=4, seed=455)
+```
+0.8245
+```{r}
+    FitNnet(decay=0.3, maxit=1500, size=4, seed=455)
+```
+0.8246
+```{r}
+    FitNnet(decay=0.2, maxit=1500, size=4, seed=455)
+```
+.7975
+```{r}
+    FitNnet(decay=0.1, maxit=1500, size=4, seed=455)
+```
+.7932
+```{r}
+    FitNnet(decay=0.4, maxit=1500, size=4, seed=455)
+```
+.8222
+
+### Size = 5
+```{r}
+    FitNnet(decay=0.3, maxit=1500, size=5, seed=455)
+```
+0.8246
+```{r}
+    FitNnet(decay=0.2, maxit=1500, size=5, seed=455)
+```
+.8263
+```{r}
+    FitNnet(decay=0.1, maxit=1500, size=5, seed=455)
+```
+.8267
+```{r}
+    FitNnet(decay=0, maxit=1500, size=5, seed=455)
+```
+.8225
+```{r}
+    FitNnet(decay=0.4, maxit=1500, size=5, seed=455)
+```
+.8274
+```{r}
+    FitNnet(decay=0.5, maxit=1500, size=5, seed=455)
+```
+.825
+
+### size = 6
+
+```{r}
+    FitNnet(decay=0.3, maxit=1500, size=6, seed=455)
+```
+.8286
+
+### size = 7
+```{r}
+    FitNnet(decay=0.3, maxit=1500, size=7, seed=455)
+```
+.8287
+### size = 8
+```{r}
+    FitNnet(decay=0.3, maxit=1500, size=8, seed=455)
+```
+.8281
+```{r}
+    FitNnet(decay=0.3, maxit=2000, size=8, seed=455)
+```
+.83
+### size = 9
+```{r}
+    FitNnet(decay=0.3, maxit=2000, size=9, seed=455)
+```
+.8322
+### size = 10
+```{r}
+    FitNnet(decay=0.3, maxit=2000, size=10, seed=455)
+```
+.8337
+### size = 12
+```{r}
+    FitNnet(decay=0.3, maxit=2000, size=12, seed=455)
+```
+.8352
+```{r}
+    FitNnet(decay=0.3, maxit=2500, size=12, seed=455)
+```
+.8367
+### size = 14
+```{r}
+    FitNnet(decay=0.3, maxit=2500, size=14, seed=455)
+```
+.8363
+### size = 16
+```{r}
+    FitNnet(decay=0.3, maxit=3500, size=16, seed=455)
+```
+.8375
+```{r}
+    FitNnet(decay=0.2, maxit=3500, size=16, seed=455)
+```
+.8342
+```{r}
+    FitNnet(decay=0.4, maxit=3500, size=16, seed=455)
+```
+.838
+```{r}
+    FitNnet(decay=0.5, maxit=3500, size=16, seed=455)
+```
+.8369
+```{r}
+    FitNnet(decay=0.45, maxit=3500, size=16, seed=455)
+```
+.834
+### size = 18
+```{r}
+    FitNnet(decay=0.3, maxit=3500, size=18, seed=455)
+```
+.8374
+```{r}
+    FitNnet(decay=0.2, maxit=3500, size=18, seed=455)
+```
+.8365
+```{r}
+    FitNnet(decay=0.4, maxit=3500, size=18, seed=455)
+```
+.8356
+### size = 20
+```{r}
+    FitNnet(decay=0.3, maxit=4000, size=20, seed=455)
+```
+.8342
+## Train 90%, Validate 10%
+```{r create_validation, cache=TRUE}
+    set.seed(33)
+    training.indices <- createDataPartition(train$Label, p=0.9, list=F)
+    predictors <- setdiff(names(train),c("EventId","Weight"))
+    training <- train[training.indices, predictors]
+    validation <<- train[-training.indices, predictors]
+```
+```{r}
+    FitNnet(decay=0.4, maxit=3500, size=16, seed=455, training=training, val=validation)
+```
+.8368
+## Bag on 90% training
+
+```{r}
+        set.seed(111)
+        fit1 <- nnet(Label~., data=training, size=16, decay=0.4, maxit=3500) 
+        pred1 <- predict(fit1, validation, type="class")
+```
+```{r}
+        set.seed(222)
+        fit2 <- nnet(Label~., data=training, size=16, decay=0.4, maxit=3500) 
+        pred2 <- predict(fit2, validation, type="class")
+```
+```{r}
+        set.seed(333)
+        fit3 <- nnet(Label~., data=training, size=16, decay=0.4, maxit=3500) 
+        pred3 <- predict(fit3, validation, type="class")
+```
+```{r}
+        set.seed(444)
+        fit4 <- nnet(Label~., data=training, size=16, decay=0.4, maxit=3500) 
+        pred4 <- predict(fit4, validation, type="class")
+```
+```{r}
+        set.seed(555)
+        fit5 <- nnet(Label~., data=training, size=16, decay=0.4, maxit=3500) 
+        pred5 <- predict(fit5, validation, type="class")
+```
+```{r}
+    pred <- data.frame(pred1, pred2, pred3, pred4, pred5)
+    all.agree <- apply(pred, 1, function(x) all(x=="b")|all(x=="s"))
+    sum(all.agree)/nrow(pred)
+    max.votes <- apply(pred, 1, function(x) ifelse(sum(x=="b") > sum(x=="s"), "b", "s"))
+    confusionMatrix(max.votes, validation$Label)
+```
+.8422
+
+## Reducing Overfitting
+### Limit abstol
+```{r}
+    FitNnet(decay=0.4, maxit=3500, size=16, seed=455)
+```
+.838
+```{r}
+    FitNnet(training=training, val=validation, size=16, maxit=3500, decay=0.4, seed=54, abstol=.01)
+```
+.8384
+```{r}
+    FitNnet(training=training, val=validation, size=16, maxit=3500, decay=0.4, seed=54, abstol=0.1)
+```
+.8384
+```{r}
+    FitNnet(training=training, val=validation, size=16, maxit=3500, decay=0.4, seed=54, abstol=1)
+```
+.8384
+```{r}
+    FitNnet(training=training, val=validation, size=16, maxit=3500, decay=0.4, seed=54, abstol=10)
+```
+```{r}
+    FitNnet(training=training, val=validation, size=16, maxit=3500, decay=0.4, seed=54, abstol=100)
+```
+.8384
+```{r}
+    FitNnet(training=training, val=validation, size=16, maxit=3500, decay=0.4, seed=54, abstol=1000)
+```
+.8384
+```{r}
+    FitNnet(training=training, val=validation, size=16, maxit=3500, decay=0.4, seed=54, abstol=100000)
+```
+.7969
+### Limit reltol
+```{r}
+    FitNnet(training=training, val=validation, size=16, maxit=3500, decay=0.4, seed=48, reltol=.1)
+```
+.6469
+```{r}
+    FitNnet(training=training, val=validation, size=16, maxit=3500, decay=0.4, seed=48, reltol=.01)
+```
+.6711
+```{r}
+    FitNnet(training=training, val=validation, size=16, maxit=3500, decay=0.4, seed=48, reltol=.001)
+```
+.6811
+```{r}
+    FitNnet(training=training, val=validation, size=16, maxit=3500, decay=0.4, seed=48, reltol=.0001)
+```
+.7095
+```{r}
+    FitNnet(training=training, val=validation, size=16, maxit=3500, decay=0.4, seed=48, reltol=.00001)
+```
+.8175
+```{r}
+    FitNnet(training=training, val=validation, size=16, maxit=3500, decay=0.4, seed=48, reltol=.000001)
+```
+.8392
+```{r}
+    FitNnet(training=training, val=validation, size=16, maxit=3500, decay=0.4, seed=48, reltol=.0000001)
+```
+.8376
+### Limit maxit
+```{r}
+    FitNnet(training=training, val=validation, size=16, maxit=500, decay=0.4, seed=46)
+```
+.7944
+```{r}
+    FitNnet(training=training, val=validation, size=16, maxit=1000, decay=0.4, seed=46)
+```
+.8325
+```{r}
+    FitNnet(training=training, val=validation, size=16, maxit=1500, decay=0.4, seed=46)
+```
+.8367
+```{r}
+    FitNnet(training=training, val=validation, size=16, maxit=2000, decay=0.4, seed=46)
+```
+.8388
+```{r}
+    FitNnet(training=training, val=validation, size=16, maxit=2500, decay=0.4, seed=46)
+```
+.839
+
+## Test Predictions
+
+Single NN 
+
+```{r}
+    set.seed(231)
+    nn.fit1 <- nnet(Label~., data=train[,predictors], size=16, decay=0.4, maxit=3500) 
+    nn.pred1 <- predict(nn.fit1, test, type="raw")
+    nn.pred1.class <- predict(nn.fit1, test, type="class")
+    unordered <- data.frame(EventId=test$EventId, s=nn.pred1, Class=nn.pred1.class)
+    ordered <- arrange(unordered, s)
+    final.prediction <- data.frame(EventId=ordered$EventId,RankOrder=1:550000,Class=ordered$Class)
+    filename <- "submission23.csv"
+    write.csv(final.prediction, file=filename, row.names=F, quote=F)  
+```
+.284707
+```{r}
+    set.seed(232)
+    nn.fit1 <- nnet(Label~., data=train[,predictors], size=16, decay=0.4, maxit=3500) 
+```
