@@ -416,7 +416,4 @@ Single NN
     write.csv(final.prediction, file=filename, row.names=F, quote=F)  
 ```
 .284707
-```{r}
-    set.seed(232)
-    nn.fit1 <- nnet(Label~., data=train[,predictors], size=16, decay=0.4, maxit=3500) 
-```
+

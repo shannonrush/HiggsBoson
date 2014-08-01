@@ -1,0 +1,66 @@
+---
+title: "submssion24"
+author: "Shannon Rush"
+date: "August 1, 2014"
+output: pdf_document
+---
+
+Building on submission 23, set of 5 neural nets
+
+### Load and Source
+```{r}
+    load("../submission23/RData/workspace.RData")
+```
+```{r load_packages}
+    library(caret)
+    library(plyr)
+    library(nnet)
+```
+```{r load_data, cache=TRUE}
+    train <- read.csv("../../data/original/training.csv")
+    test <- read.csv("../../data/original/test.csv")
+```
+
+## Models
+```{r}
+    set.seed(232)
+    nn.fit2 <- nnet(Label~., data=train[,predictors], size=16, decay=0.4, maxit=3500) 
+    nn.pred2 <- predict(nn.fit2, test, type="raw")
+    nn.pred2.class <- predict(nn.fit2, test, type="class")
+```
+```{r}
+    set.seed(233)
+    nn.fit3 <- nnet(Label~., data=train[,predictors], size=16, decay=0.4, maxit=3500) 
+    nn.pred3 <- predict(nn.fit3, test, type="raw")
+    nn.pred3.class <- predict(nn.fit3, test, type="class")
+```
+```{r}
+    set.seed(234)
+    nn.fit4 <- nnet(Label~., data=train[,predictors], size=16, decay=0.4, maxit=3500) 
+    nn.pred4 <- predict(nn.fit4, test, type="raw")
+    nn.pred4.class <- predict(nn.fit4, test, type="class")
+```
+```{r}
+    set.seed(235)
+    nn.fit5 <- nnet(Label~., data=train[,predictors], size=16, decay=0.4, maxit=3500) 
+    nn.pred5 <- predict(nn.fit5, test, type="raw")
+    nn.pred5.class <- predict(nn.fit5, test, type="class")
+```
+```{r}
+    nn.preds <- data.frame(nn.pred1.class, nn.pred2.class, nn.pred3.class, nn.pred4.class, nn.pred5.class)
+    all.agree <- apply(nn.preds, 1, function(x) all(x=="b")|all(x=="s"))
+    sum(all.agree)/nrow(nn.preds)
+    max.votes <- apply(nn.preds, 1, function(x) ifelse(sum(x=="b") > sum(x=="s"), "b", "s"))
+    probs <- (nn.pred1+nn.pred2+nn.pred3+nn.pred4+nn.pred5)/5
+    unordered <- data.frame(EventId=test$EventId, Class=max.votes, probs=probs)
+    ordered <- arrange(unordered, probs)
+    final.prediction <- data.frame(EventId=ordered$EventId,RankOrder=1:550000,Class=ordered$Class)
+    filename <- "submission24.csv"
+    write.csv(final.prediction, file=filename, row.names=F, quote=F)  
+```
+2.88060
+
+```{r}
+    save.image("RData/workspace.RData")
+```
+
