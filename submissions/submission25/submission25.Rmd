@@ -1,0 +1,44 @@
+---
+title: "submission25"
+author: "Shannon Rush"
+date: "August 1, 2014"
+output: html_document
+---
+
+Ensemble of 6 RFs and 5 NNs
+
+## Load
+```{r}
+    load("../submission24/RData/workspace.RData")
+    load("../submission20/RData/workspace.RData")
+```
+```{r}
+    test <- read.csv("../../data/original/test.csv")
+```
+
+```{r}
+    blend.pred <- data.frame(pred.class1, pred.class2, pred.class3, pred.class4, pred.class5, pred.class6,
+                             nn.pred1.class, nn.pred2.class, nn.pred3.class, nn.pred4.class, nn.pred5.class)
+```
+```{r}
+    all.agree <- apply(blend.pred, 1, function(x) all(x=="b")|all(x=="s"))
+    sum(all.agree)/nrow(blend.pred)
+    max.votes <- apply(blend.pred, 1, function(x) ifelse(sum(x=="b") > sum(x=="s"), "b", "s"))
+```
+```{r}
+    rf.probs <- (pred.test1[,2] + pred.test2[,2] + pred.test3[,2] + pred.test4[,2] + pred.test5[,2]+ pred.test6[,2])/6
+    nn.probs <- (nn.pred1+nn.pred2+nn.pred3+nn.pred4+nn.pred5)/5
+    probs <- (rf.probs+nn.probs)/2
+```
+```{r}
+    unordered <- data.frame(EventId=test$EventId, Class=max.votes, probs=probs)
+    ordered <- arrange(unordered, probs)
+    final.prediction <- data.frame(EventId=ordered$EventId,RankOrder=1:550000,Class=ordered$Class)
+    filename <- "submission25.csv"
+    write.csv(final.prediction, file=filename, row.names=F, quote=F)  
+```
+2.93004
+
+
+
+
